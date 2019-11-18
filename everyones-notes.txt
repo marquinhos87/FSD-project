@@ -1,0 +1,44 @@
+--------------------------------------------------------------------------------
+
+1 project, 3 modules:
+    - client
+    - common
+    - server
+
+Dependencies:
+
+    Atomix 3.1.5 (https://repo1.maven.org/maven2/io/atomix/atomix/3.1.5/)
+
+Clients connect to a server through Atomix? Or through plain TCP sockets? I
+guess Atomix? There wouldn't be any problem, would there?
+
+--------------------------------------------------------------------------------
+
+{
+    var atomix = Atomix.builder("config.yaml").build();
+}
+
+--------------------------------------------------------------------------------
+
+cluster:
+
+  member-id: client-1
+  address: 10.192.19.180:5679
+
+  discovery:
+
+    type: bootstrap
+
+    nodes.1:
+      id: server-1
+      address: 10.192.19.181:5679
+
+    nodes.2:
+      id: server-2
+      address: 10.192.19.182:5679
+
+    nodes.3:
+      id: server-3
+      address: 10.192.19.183:5679
+
+--------------------------------------------------------------------------------
