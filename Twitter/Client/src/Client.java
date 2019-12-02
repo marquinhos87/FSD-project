@@ -1,26 +1,67 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.Socket;
+/* -------------------------------------------------------------------------- */
 
-public class Client {
-    public static void main(String[] args){
-        BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-        String[] ip = args;
-        if(args.length < 2) {
-            System.out.println("Coloque o IP e a porta do servidor a que se pretende ligar");
-            try {
-                ip = in.readLine().split(" ");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        try {
-            //Address ad = Address.from(ip[0],Integer.parseInt(ip[1]));
-            Socket s = new Socket(ip[0],Integer.parseInt(ip[1]));
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+/* -------------------------------------------------------------------------- */
+
+public class Client implements AutoCloseable
+{
+    private final InetSocketAddress socketAddress;
+
+    private final Set< String > subscribedTopics;
+
+    public Client(InetSocketAddress socketAddress)
+    {
+        this.socketAddress = socketAddress;
+
+        this.subscribedTopics = new HashSet<>();
+    }
+
+    public void start()
+    {
+        // TODO: implement
+    }
+
+    public void publishChirp(CharSequence chirp)
+    {
+        // TODO: implement
+    }
+
+    public Set< String > getSubscribedTopics()
+    {
+        return Collections.unmodifiableSet(this.subscribedTopics);
+    }
+
+    public void setSubscribedTopics(Collection< ? extends CharSequence > topics)
+    {
+        // note: must validate new topics before modifying subscribed topic set
+
+        final var newTopics =
+            topics
+            .stream()
+            .map(Config::normalizeTopic)
+            .collect(Collectors.toUnmodifiableList());
+
+        this.subscribedTopics.clear();
+        this.subscribedTopics.addAll(newTopics);
+    }
+
+    public List< String > getLatestChirps()
+    {
+        return List.of(); // TODO: implement
+    }
+
+    @Override
+    public void close() throws Exception
+    {
+        // TODO: implement
     }
 }
+
+/* -------------------------------------------------------------------------- */
