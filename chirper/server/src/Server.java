@@ -35,6 +35,7 @@ public class Server
 
     public void run()
     {
+        ms.start();
         echo();
     }
 
