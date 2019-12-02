@@ -1,27 +1,41 @@
 /* -------------------------------------------------------------------------- */
 
+import io.atomix.cluster.messaging.ManagedMessagingService;
+import io.atomix.cluster.messaging.MessagingConfig;
+import io.atomix.cluster.messaging.impl.NettyMessagingService;
+import io.atomix.core.Atomix;
+import io.atomix.core.AtomixConfig;
+import io.atomix.storage.journal.Journal;
+import io.atomix.utils.net.Address;
+import io.atomix.utils.serializer.Serializer;
+import io.atomix.utils.serializer.SerializerBuilder;
+
 import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /* -------------------------------------------------------------------------- */
 
 public class Client implements AutoCloseable
 {
+    private ManagedMessagingService ms;
+    private Serializer s;
     private final Set< String > subscribedTopics;
 
     public Client(InetSocketAddress socketAddress)
     {
+        this.ms = new NettyMessagingService(
+                "servidor", new Address(socketAddress.getHostName(), socketAddress.getPort()),
+                new MessagingConfig());
+
+        this.s = new SerializerBuilder().addType(Msg.class).build();
+
         this.subscribedTopics = new HashSet<>();
     }
 
     public void start()
     {
-
+        this.ms.start();
     }
 
     public Set< String > getSubscribedTopics()
@@ -68,6 +82,9 @@ public class Client implements AutoCloseable
         }
 
         // TODO: implement
+
+        Msg m = new Msg(1,1,chirp.toString(),new ArrayList<>());
+        ms.sendAsync(Address.from("localhost",12345), "cliente", s.encode(m));
     }
 
     @Override
