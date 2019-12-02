@@ -1,5 +1,9 @@
 /* -------------------------------------------------------------------------- */
 
+import io.atomix.core.Atomix;
+import io.atomix.core.AtomixConfig;
+import io.atomix.utils.net.Address;
+
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Collections;
@@ -12,20 +16,23 @@ import java.util.stream.Collectors;
 
 public class Client implements AutoCloseable
 {
-    private final InetSocketAddress socketAddress;
+    private final Atomix atomix;
 
     private final Set< String > subscribedTopics;
 
     public Client(InetSocketAddress socketAddress)
     {
-        this.socketAddress = socketAddress;
+        this.atomix =
+            Atomix
+            .builder(new AtomixConfig())
+            .withAddress(new Address)
 
         this.subscribedTopics = new HashSet<>();
     }
 
     public void start()
     {
-        // TODO: implement
+
     }
 
     public Set< String > getSubscribedTopics()
