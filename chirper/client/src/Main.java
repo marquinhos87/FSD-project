@@ -43,24 +43,6 @@ public class Main
                 System.exit(1);
             }
         }
-
-//
-//        String[] ip = args;
-//        if(args.length < 2) {
-//            System.out.println("Coloque o IP e a porta do servidor a que se pretende ligar");
-//            try {
-//                ip = in.readLine().split(" ");
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//        }
-//        try {
-//            //Address ad = Address.from(ip[0],Integer.parseInt(ip[1]));
-//            Socket s = new Socket(ip[0],Integer.parseInt(ip[1]));
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
     }
 
     private static Optional< InetSocketAddress > parseArgs(String[] args)
