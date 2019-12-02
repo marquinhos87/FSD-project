@@ -123,6 +123,9 @@ public class Main
 
     private static void handleLine(Client client, String line, PrintWriter out)
     {
+        if (line.isBlank())
+            return;
+
         final var matcher = COMMAND_PATTERN.matcher(line);
 
         if (matcher.matches())
@@ -133,7 +136,7 @@ public class Main
             {
                 case "get":
 
-                    if (!matcher.group("args").isEmpty())
+                    if (matcher.group("args") != null)
                     {
                         printError(
                             out,
@@ -203,6 +206,9 @@ public class Main
 
     private static void handleSubscribe(Client client, String topics, PrintWriter out)
     {
+        if (topics == null)
+            topics = "";
+
         try
         {
             client.setSubscribedTopics(topics.split("\\s+"));
