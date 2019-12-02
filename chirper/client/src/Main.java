@@ -7,6 +7,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 /* -------------------------------------------------------------------------- */
 
@@ -117,10 +118,85 @@ public class Main
         }
     }
 
+    private static final Pattern COMMAND_PATTERN = Pattern.compile(
+        "^\\s*!\\s*(?<command>\\w+)(?:\\s+(?<args>.*))?"
+    );
+
     private static void handleLine(Client client, String line, PrintWriter out)
     {
-        printWarning(out, Config.getChirpTopics(line).toString());
-        out.flush();
+        final var matcher = COMMAND_PATTERN.matcher(line);
+
+        if (matcher.matches())
+        {
+            // treat line as command
+
+            switch (matcher.group("command"))
+            {
+                case "get":
+
+                    if (!matcher.group("args").isEmpty())
+                    {
+                        printError(
+                            out,
+                            "Command 'get' does not accept arguments."
+                        );
+                    }
+                    else if (client.getSubscribedTopics().isEmpty())
+                    {
+                        printWarning(
+                            out,
+                            "You are not subscribed to any topics."
+                        );
+                    }
+                    else
+                    {
+                        final var chirps = client.getLatestChirps();
+
+                        if (chirps.isEmpty())
+                        {
+                            printWarning(
+                                out,
+                                "No chirps exist with any of your subscribed"
+                                " topics."
+                            );
+                        }
+
+                        for (final var chirp : chirps)
+                            out.println(chirp);
+
+                        out.flush();
+                    }
+
+                    break;
+
+                case "sub":
+                case "subscribe":
+
+                    final var topics = matcher.group("args");
+
+                    if (topics.isEmpty())
+                        printError(out, "No topics specified.");
+                    else
+                        client.setSubscribedTopics(topics.split("\\s+"));
+
+                    break;
+
+                default:
+
+                    printError(
+                        out,
+                        "Unknown command, must be 'get', 'sub', or 'subscribe'."
+                    );
+
+                    break;
+            }
+        }
+        else
+        {
+            // treat line as chirp
+
+            client.publishChirp(line);
+        }
     }
 
     private static void printWarning(PrintWriter out, String msg)

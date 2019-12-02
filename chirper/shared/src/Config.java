@@ -1,12 +1,11 @@
 /* -------------------------------------------------------------------------- */
 
-/* -------------------------------------------------------------------------- */
-
 import java.nio.charset.Charset;
-import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+/* -------------------------------------------------------------------------- */
 
 public class Config
 {
@@ -20,11 +19,11 @@ public class Config
 
     // chirps
 
-    private static Pattern TOPIC_PATTERN = Pattern.compile(
+    private static final Pattern TOPIC_PATTERN = Pattern.compile(
         "#?(\\p{IsAlphabetic}+)"
     );
 
-    private static Pattern INLINE_TOPIC_PATTERN = Pattern.compile(
+    private static final Pattern INLINE_TOPIC_PATTERN = Pattern.compile(
         "(?:^|\\P{IsAlphabetic})#(\\p{IsAlphabetic}+)"
     );
 
@@ -40,6 +39,11 @@ public class Config
         }
 
         return matcher.group(1);
+    }
+
+    public static boolean chirpContainsTopics(CharSequence chirp)
+    {
+        return INLINE_TOPIC_PATTERN.matcher(chirp).find();
     }
 
     public static Set< String > getChirpTopics(CharSequence chirp)

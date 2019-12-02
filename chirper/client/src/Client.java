@@ -28,14 +28,14 @@ public class Client implements AutoCloseable
         // TODO: implement
     }
 
-    public void publishChirp(CharSequence chirp)
-    {
-        // TODO: implement
-    }
-
     public Set< String > getSubscribedTopics()
     {
         return Collections.unmodifiableSet(this.subscribedTopics);
+    }
+
+    public void setSubscribedTopics(CharSequence[] topics)
+    {
+        this.setSubscribedTopics(List.of(topics));
     }
 
     public void setSubscribedTopics(Collection< ? extends CharSequence > topics)
@@ -46,7 +46,7 @@ public class Client implements AutoCloseable
             topics
             .stream()
             .map(Config::normalizeTopic)
-            .collect(Collectors.toUnmodifiableList());
+            .collect(Collectors.toList());
 
         this.subscribedTopics.clear();
         this.subscribedTopics.addAll(newTopics);
@@ -55,6 +55,11 @@ public class Client implements AutoCloseable
     public List< String > getLatestChirps()
     {
         return List.of(); // TODO: implement
+    }
+
+    public void publishChirp(CharSequence chirp)
+    {
+        // TODO: implement
     }
 
     @Override
