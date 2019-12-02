@@ -2,6 +2,7 @@
 
 import io.atomix.core.Atomix;
 import io.atomix.core.AtomixConfig;
+import io.atomix.storage.journal.Journal;
 import io.atomix.utils.net.Address;
 
 import java.net.InetSocketAddress;
@@ -25,7 +26,10 @@ public class Client implements AutoCloseable
         this.atomix =
             Atomix
             .builder(new AtomixConfig())
-            .withAddress(new Address)
+            .withAddress(new Address(socketAddress.getHostName(), socketAddress.getPort()))
+            .build();
+
+        atomix.start();
 
         this.subscribedTopics = new HashSet<>();
     }
