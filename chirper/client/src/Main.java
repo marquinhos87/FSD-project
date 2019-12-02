@@ -112,7 +112,6 @@ public class Main
                 if (line == null)
                     break; // no more input, terminate
 
-                // if (Pattern.mat("^\\s*\\\\(\w+)\s+(.*)$"))
                 handleLine(client, line, out);
             }
         }
@@ -141,30 +140,9 @@ public class Main
                             "Command 'get' does not accept arguments."
                         );
                     }
-                    else if (client.getSubscribedTopics().isEmpty())
-                    {
-                        printWarning(
-                            out,
-                            "You are not subscribed to any topics."
-                        );
-                    }
                     else
                     {
-                        final var chirps = client.getLatestChirps();
-
-                        if (chirps.isEmpty())
-                        {
-                            printWarning(
-                                out,
-                                "No chirps exist with any of your subscribed"
-                                " topics."
-                            );
-                        }
-
-                        for (final var chirp : chirps)
-                            out.println(chirp);
-
-                        out.flush();
+                        handleGet(client, out);
                     }
 
                     break;
@@ -172,12 +150,7 @@ public class Main
                 case "sub":
                 case "subscribe":
 
-                    final var topics = matcher.group("args");
-
-                    if (topics.isEmpty())
-                        printError(out, "No topics specified.");
-                    else
-                        client.setSubscribedTopics(topics.split("\\s+"));
+                    handleSubscribe(client, matcher.group("args"), out);
 
                     break;
 
@@ -195,7 +168,60 @@ public class Main
         {
             // treat line as chirp
 
-            client.publishChirp(line);
+            handlePublish(client, line, out);
+        }
+    }
+
+    private static void handleGet(Client client, PrintWriter out)
+    {
+        if (client.getSubscribedTopics().isEmpty())
+        {
+            printError(
+                out,
+                "You are not subscribed to any topics."
+            );
+        }
+        else
+        {
+            final var chirps = client.getLatestChirps();
+
+            if (chirps.isEmpty())
+            {
+                printWarning(
+                    out,
+                    "No chirps exist for any of your subscribed"
+                        + " topics."
+                );
+            }
+
+            for (final var chirp : chirps)
+                out.println(chirp);
+
+            out.flush();
+        }
+    }
+
+    private static void handleSubscribe(Client client, String topics, PrintWriter out)
+    {
+        try
+        {
+            client.setSubscribedTopics(topics.split("\\s+"));
+        }
+        catch (IllegalArgumentException e)
+        {
+            printError(out, e.getMessage());
+        }
+    }
+
+    private static void handlePublish(Client client, String chirp, PrintWriter out)
+    {
+        try
+        {
+            client.publishChirp(chirp);
+        }
+        catch (IllegalArgumentException e)
+        {
+            printError(out, e.getMessage());
         }
     }
 

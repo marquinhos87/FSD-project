@@ -48,8 +48,13 @@ public class Client implements AutoCloseable
             .map(Config::normalizeTopic)
             .collect(Collectors.toList());
 
+        if (newTopics.isEmpty())
+            throw new IllegalArgumentException("No topics specified.");
+
         this.subscribedTopics.clear();
         this.subscribedTopics.addAll(newTopics);
+
+        // TODO: implement
     }
 
     public List< String > getLatestChirps()
@@ -59,6 +64,13 @@ public class Client implements AutoCloseable
 
     public void publishChirp(CharSequence chirp)
     {
+        if (!Config.chirpContainsTopics(chirp))
+        {
+            throw new IllegalArgumentException(
+                "This chirp does not contain any topics."
+            );
+        }
+
         // TODO: implement
     }
 
