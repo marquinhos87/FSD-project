@@ -7,6 +7,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 
 /* -------------------------------------------------------------------------- */
@@ -103,8 +104,7 @@ public class Main
         "^\\s*!\\s*(?<command>\\w+)(?:\\s+(?<args>.*))?"
     );
 
-    private static void handleLine(Client client, String line, PrintWriter out)
-    {
+    private static void handleLine(Client client, String line, PrintWriter out) throws ExecutionException, InterruptedException {
         if (line.isBlank())
             return;
 
@@ -157,8 +157,17 @@ public class Main
         }
     }
 
-    private static void handleGet(Client client, PrintWriter out)
+    private static void handleLogin()
     {
+        //TODO : implement
+    }
+
+    private static void handleRegister()
+    {
+        //TODO : implement
+    }
+
+    private static void handleGet(Client client, PrintWriter out) throws ExecutionException, InterruptedException {
         if (client.getSubscribedTopics().isEmpty())
         {
             printError(

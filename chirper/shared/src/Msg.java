@@ -5,13 +5,15 @@ public class Msg {
     private int timeStamp;
     private int serverID;
     private String msg;
-    private List<String> hastags;
 
-    public Msg(int timeStamp, int serverID, String msg, List<String> hastags) {
+    public Msg(String msg) {
+        this.msg = msg;
+    }
+
+    public Msg(int timeStamp, int serverID, String msg) {
         this.serverID = serverID;
         this.timeStamp = timeStamp;
         this.msg = msg;
-        this.hastags = hastags;
     }
 
     public String getMsg() {

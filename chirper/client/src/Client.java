@@ -12,6 +12,8 @@ import io.atomix.utils.serializer.SerializerBuilder;
 
 import java.net.InetSocketAddress;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 /* -------------------------------------------------------------------------- */
@@ -21,9 +23,12 @@ public class Client implements AutoCloseable
     private ManagedMessagingService ms;
     private Serializer s;
     private final Set< String > subscribedTopics;
+    private Address address;
 
     public Client(InetSocketAddress socketAddress)
     {
+        this.address = new Address("localhost",12345);
+        //this.address = new Address(socketAddress.getHostName(), socketAddress.getPort());
         this.ms = new NettyMessagingService(
                 "servidor", new Address(socketAddress.getHostName(), socketAddress.getPort()),
                 new MessagingConfig());
@@ -64,12 +69,19 @@ public class Client implements AutoCloseable
         this.subscribedTopics.clear();
         this.subscribedTopics.addAll(newTopics);
 
+        StringBuilder sb = new StringBuilder();
+        sb.append("!sub ");
+        for(final var aux: this.subscribedTopics)
+            sb.append(aux).append(" ");
+        sendMsgAsync(sb.toString());
+
         // TODO: implement
     }
 
-    public List< String > getLatestChirps()
-    {
-        return List.of(); // TODO: implement
+    public List< String > getLatestChirps() throws ExecutionException, InterruptedException {
+        final var chirps = sendMsgSync("!get");
+
+        return List.of(chirps.split("\n")); // TODO: implement
     }
 
     public void publishChirp(CharSequence chirp)
@@ -82,9 +94,25 @@ public class Client implements AutoCloseable
         }
 
         // TODO: implement
+        sendMsgAsync(chirp);
 
-        Msg m = new Msg(1,1,chirp.toString(),new ArrayList<>());
-        ms.sendAsync(Address.from("localhost",12345), "cliente", s.encode(m));
+    }
+
+    public void sendMsgAsync(CharSequence chirp)
+    {
+        Msg m = new Msg(chirp.toString());
+        ms.sendAsync(address, "cliente", s.encode(m));
+    }
+
+    public String sendMsgSync(CharSequence action) {
+        Msg m = new Msg(action.toString());
+        byte[] response = new byte[0];
+        try {
+            response = ms.sendAndReceive(address,"cliente",s.encode(m)).get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+        return new String(response);
     }
 
     @Override

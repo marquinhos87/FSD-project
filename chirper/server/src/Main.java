@@ -17,7 +17,8 @@ public class Main
             final var out = new PrintWriter(new OutputStreamWriter(System.out))
         )
         {
-            new Server().run();
+            Server s = new Server();
+            s.run();
         }
     }
 }
