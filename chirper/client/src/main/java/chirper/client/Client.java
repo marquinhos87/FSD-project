@@ -1,18 +1,22 @@
 /* -------------------------------------------------------------------------- */
 
+package chirper.client;
+
+import chirper.shared.Msg;
+import chirper.shared.Util;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
-import io.atomix.core.Atomix;
-import io.atomix.core.AtomixConfig;
-import io.atomix.storage.journal.Journal;
 import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Serializer;
 import io.atomix.utils.serializer.SerializerBuilder;
 
 import java.net.InetSocketAddress;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
@@ -60,7 +64,7 @@ public class Client implements AutoCloseable
         final var newTopics =
             topics
             .stream()
-            .map(Config::normalizeTopic)
+            .map(Util::normalizeTopic)
             .collect(Collectors.toList());
 
         if (newTopics.isEmpty())
@@ -86,7 +90,7 @@ public class Client implements AutoCloseable
 
     public void publishChirp(CharSequence chirp)
     {
-        if (!Config.chirpContainsTopics(chirp))
+        if (!Util.chirpContainsTopics(chirp))
         {
             throw new IllegalArgumentException(
                 "This chirp does not contain any topics."

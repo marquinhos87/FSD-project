@@ -1,8 +1,10 @@
 /.idea/dictionaries
+/.idea/libraries
 /.idea/shelf
 /.idea/tasks.xml
 /.idea/uiDesigner.xml
 /.idea/usage.statistics.xml
 /.idea/workspace.xml
-/.idea/libraries/
-/out/
+/client/target
+/server/target
+/shared/target

@@ -1,5 +1,10 @@
 /* -------------------------------------------------------------------------- */
 
+package chirper.client;
+
+import chirper.shared.Config;
+import chirper.shared.Util;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -12,13 +17,14 @@ import java.util.regex.Pattern;
 
 /* -------------------------------------------------------------------------- */
 
-public class Main
+public class ClientMain
 {
     public static void main(String[] args) throws IOException
     {
         try (
             final var in = new BufferedReader(new InputStreamReader(System.in));
-            final var out = new PrintWriter(new OutputStreamWriter(System.out))
+            final var out = new PrintWriter(new OutputStreamWriter(System.out));
+            final var err = new PrintWriter(new OutputStreamWriter(System.err))
         )
         {
             try
@@ -29,8 +35,8 @@ public class Main
 
                 if (socketAddress.isEmpty())
                 {
-                    out.println("Usage: chirper <host> [<port>]");
-                    out.flush();
+                    err.println("Usage: chirper <host> [<port>]");
+                    err.flush();
                     System.exit(2);
                 }
 
@@ -40,7 +46,7 @@ public class Main
             }
             catch (Exception e)
             {
-                printError(out, e.getMessage());
+                Util.printError(err, e.getMessage());
                 System.exit(1);
             }
         }
@@ -52,7 +58,7 @@ public class Main
 
         if (args.length == 1)
         {
-            port = Config.DEFAULT_CLIENT_PORT;
+            port = Config.DEFAULT_PORT;
         }
         else if (args.length == 2)
         {
@@ -120,7 +126,7 @@ public class Main
 
                     if (matcher.group("args") != null)
                     {
-                        printError(
+                        Util.printError(
                             out,
                             "Command 'get' does not accept arguments."
                         );
@@ -141,7 +147,7 @@ public class Main
 
                 default:
 
-                    printError(
+                    Util.printError(
                         out,
                         "Unknown command, must be 'get', 'sub', or 'subscribe'."
                     );
@@ -170,7 +176,7 @@ public class Main
     private static void handleGet(Client client, PrintWriter out) throws ExecutionException, InterruptedException {
         if (client.getSubscribedTopics().isEmpty())
         {
-            printError(
+            Util.printError(
                 out,
                 "You are not subscribed to any topics."
             );
@@ -181,7 +187,7 @@ public class Main
 
             if (chirps.isEmpty())
             {
-                printWarning(
+                Util.printWarning(
                     out,
                     "No chirps exist for any of your subscribed"
                         + " topics."
@@ -206,7 +212,7 @@ public class Main
         }
         catch (IllegalArgumentException e)
         {
-            printError(out, e.getMessage());
+            Util.printError(out, e.getMessage());
         }
     }
 
@@ -218,20 +224,8 @@ public class Main
         }
         catch (IllegalArgumentException e)
         {
-            printError(out, e.getMessage());
+            Util.printError(out, e.getMessage());
         }
-    }
-
-    private static void printWarning(PrintWriter out, String msg)
-    {
-        out.format("\033[33m%s\033[0m\n", msg);
-        out.flush();
-    }
-
-    private static void printError(PrintWriter out, String msg)
-    {
-        out.format("\033[31m%s\033[0m\n", msg);
-        out.flush();
     }
 }
 

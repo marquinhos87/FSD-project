@@ -1,7 +1,13 @@
+/* -------------------------------------------------------------------------- */
+
+package chirper.server;
+
 import io.atomix.utils.net.Address;
 
 import java.util.ArrayList;
 import java.util.List;
+
+/* -------------------------------------------------------------------------- */
 
 public class Client {
     private List<String> topicos;
@@ -23,3 +29,5 @@ public class Client {
         return topicos;
     }
 }
+
+/* -------------------------------------------------------------------------- */

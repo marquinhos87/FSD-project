@@ -1,22 +1,16 @@
 /* -------------------------------------------------------------------------- */
 
-import java.nio.charset.Charset;
+package chirper.shared;
+
+import java.io.PrintWriter;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /* -------------------------------------------------------------------------- */
 
-public class Config
+public class Util
 {
-    private Config()
-    {
-    }
-
-    // network
-
-    public static final int DEFAULT_CLIENT_PORT = 7777;
-
     // chirps
 
     private static final Pattern TOPIC_PATTERN = Pattern.compile(
@@ -56,6 +50,19 @@ public class Config
                 .collect(Collectors.toUnmodifiableSet());
     }
 
+    // output
+
+    public static void printWarning(PrintWriter writer, String text)
+    {
+        writer.format("\033[33m%s\033[0m\n", text);
+        writer.flush();
+    }
+
+    public static void printError(PrintWriter writer, String text)
+    {
+        writer.format("\033[31m%s\033[0m\n", text);
+        writer.flush();
+    }
 }
 
 /* -------------------------------------------------------------------------- */

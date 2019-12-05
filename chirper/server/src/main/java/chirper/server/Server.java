@@ -1,7 +1,9 @@
 /* -------------------------------------------------------------------------- */
 
-/* -------------------------------------------------------------------------- */
+package chirper.server;
 
+import chirper.shared.Msg;
+import chirper.shared.Util;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
@@ -17,19 +19,21 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
 
+/* -------------------------------------------------------------------------- */
+
 public class Server
 {
 
     private ManagedMessagingService ms;
     private ExecutorService es;
     private Serializer s;
-    private Map<Address,Client> clients;
-    private Map<String,List<Msg>> chirps;
+    private Map<Address, Client > clients;
+    private Map<String,List< Msg >> chirps;
 
-    public Server()
+    public Server(int port)
     {
         this.ms = new NettyMessagingService(
-                "servidor", Address.from("localhost",12345),
+                "servidor", Address.from("localhost", port),
                 new MessagingConfig());
 
         this.es = Executors.newFixedThreadPool(1);
@@ -38,10 +42,10 @@ public class Server
 
         this.chirps = new HashMap<>();
 
-        //List<Msg> list = new ArrayList<>();
-        //list.add(new Msg("ola"));
-        //list.add(new Msg("ole"));
-        //list.add(new Msg("olu"));
+        //List<chirper.shared.Msg> list = new ArrayList<>();
+        //list.add(new chirper.shared.Msg("ola"));
+        //list.add(new chirper.shared.Msg("ole"));
+        //list.add(new chirper.shared.Msg("olu"));
         //chirps.put("ola",list);
 
         this.s = new SerializerBuilder().addType(Msg.class).build();
@@ -138,7 +142,7 @@ public class Server
     private List<String> parseTopics(Msg m)
     {
 
-        List < String > topics = new ArrayList<>(Config.getChirpTopics(m.getMsg()));
+        List < String > topics = new ArrayList<>(Util.getChirpTopics(m.getMsg()));
 
         return topics;
     }
@@ -154,7 +158,7 @@ public class Server
         {
 
             if(chirps.containsKey(topic)) {
-                List<Msg> msgs = chirps.get(topic);
+                List< Msg > msgs = chirps.get(topic);
 
                 if (msgs.size() == 10)
                 {
@@ -169,7 +173,7 @@ public class Server
             }
             else
             {
-                List<Msg> list = new ArrayList<>();
+                List< Msg > list = new ArrayList<>();
                 list.add(m);
                 chirps.put(topic,list);
             }
