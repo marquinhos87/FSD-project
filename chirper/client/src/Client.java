@@ -78,7 +78,7 @@ public class Client implements AutoCloseable
         // TODO: implement
     }
 
-    public List< String > getLatestChirps() throws ExecutionException, InterruptedException {
+    public List< String > getLatestChirps() {
         final var chirps = sendMsgSync("!get");
 
         return List.of(chirps.split("\n")); // TODO: implement
