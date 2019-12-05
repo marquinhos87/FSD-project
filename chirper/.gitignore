@@ -6,5 +6,6 @@
 /.idea/usage.statistics.xml
 /.idea/workspace.xml
 /client/target
+/out
 /server/target
 /shared/target
