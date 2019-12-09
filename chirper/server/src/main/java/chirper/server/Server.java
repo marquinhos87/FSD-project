@@ -27,10 +27,11 @@ public class Server
     private ManagedMessagingService ms;
     private ExecutorService es;
     private Serializer s;
+    private List<Address> servers;
     private Map<Address, Client > clients;
     private Map<String,List< Msg >> chirps;
 
-    public Server(int port)
+    public Server(int port, List<Address> servers)
     {
         this.ms = new NettyMessagingService(
                 "servidor", Address.from("localhost", port),
@@ -42,11 +43,7 @@ public class Server
 
         this.chirps = new HashMap<>();
 
-        //List<chirper.shared.Msg> list = new ArrayList<>();
-        //list.add(new chirper.shared.Msg("ola"));
-        //list.add(new chirper.shared.Msg("ole"));
-        //list.add(new chirper.shared.Msg("olu"));
-        //chirps.put("ola",list);
+        this.servers = new ArrayList<>(servers);
 
         this.s = new SerializerBuilder().addType(Msg.class).build();
     }
@@ -54,8 +51,8 @@ public class Server
     public void run()
     {
         ms.start();
-        handleClient();
         handleServer();
+        handleClient();
         while(true); // temporario so para poder testar
     }
 

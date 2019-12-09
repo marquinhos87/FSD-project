@@ -4,16 +4,23 @@ package chirper.server;
 
 import chirper.shared.Config;
 import chirper.shared.Util;
+import io.atomix.utils.net.Address;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.OptionalInt;
 
 /* -------------------------------------------------------------------------- */
 
 public class ServerMain
 {
+
+
+
     public static void main(String[] args) throws IOException
     {
         try (
@@ -26,17 +33,30 @@ public class ServerMain
                 // check usage and parse arguments
 
                 final var port = parseArgs(args);
+                final var n_servers = Integer.parseUnsignedInt(args[1]);
 
-                if (port.isEmpty())
+                if (port.isEmpty() || args.length != 2)
                 {
-                    err.println("Usage: chirper-server [<port>]");
+                    err.println("Usage: chirper-server <N servers> [<port>]");
                     err.flush();
                     System.exit(2);
                 }
 
                 // run server
 
-                new Server(port.getAsInt()).run();
+                int p = port.getAsInt();
+                List<Address> servers = new ArrayList<>();
+
+                for (int i = p; i < (p + n_servers); i+=1)
+                {
+                    if (i > p)
+                    {
+                        servers.add(Address.from("localhost",i));
+                    }
+                }
+
+                new Server(port.getAsInt(),servers).run();
+
             }
             catch (Exception e)
             {
@@ -50,15 +70,15 @@ public class ServerMain
     {
         int port;
 
-        if (args.length == 0)
+        if (args.length == 1)
         {
             port = Config.DEFAULT_PORT;
         }
-        else if (args.length == 1)
+        else if (args.length == 2)
         {
             try
             {
-                port = Integer.parseUnsignedInt(args[1]);
+                port = Integer.parseUnsignedInt(args[2]);
             }
             catch (NumberFormatException e)
             {
