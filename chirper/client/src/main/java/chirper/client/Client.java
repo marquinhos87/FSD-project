@@ -27,14 +27,14 @@ public class Client implements AutoCloseable
     private ManagedMessagingService ms;
     private Serializer s;
     private final Set< String > subscribedTopics;
-    private Address address;
+    private Address address_server;
 
     public Client(InetSocketAddress socketAddress)
     {
-        this.address = new Address("localhost",12345);
-        //this.address = new Address(socketAddress.getHostName(), socketAddress.getPort());
+        this.address_server = new Address(socketAddress.getHostName(), socketAddress.getPort());
+
         this.ms = new NettyMessagingService(
-                "servidor", new Address(socketAddress.getHostName(), socketAddress.getPort()),
+                "servidor", new Address(socketAddress.getHostName(), 12345),
                 new MessagingConfig());
 
         this.s = new SerializerBuilder().addType(Msg.class).build();
@@ -105,14 +105,14 @@ public class Client implements AutoCloseable
     public void sendMsgAsync(CharSequence chirp)
     {
         Msg m = new Msg(chirp.toString());
-        ms.sendAsync(address, "cliente", s.encode(m));
+        ms.sendAsync(address_server, "cliente", s.encode(m));
     }
 
     public String sendMsgSync(CharSequence action) {
         Msg m = new Msg(action.toString());
         byte[] response = new byte[0];
         try {
-            response = ms.sendAndReceive(address,"cliente",s.encode(m)).get();
+            response = ms.sendAndReceive(address_server,"cliente",s.encode(m)).get();
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
         }

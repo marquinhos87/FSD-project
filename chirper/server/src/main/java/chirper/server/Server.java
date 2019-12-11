@@ -11,6 +11,7 @@ import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Serializer;
 import io.atomix.utils.serializer.SerializerBuilder;
 
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,15 +28,37 @@ public class Server
     private ManagedMessagingService ms;
     private ExecutorService es;
     private Serializer s;
+    private long timeStamp;
     private List<Address> servers;
     private Map<Address, Client > clients;
     private Map<String,List< Msg >> chirps;
 
-    public Server(int port, List<Address> servers)
+    public Server(String args)
     {
-        this.ms = new NettyMessagingService(
-                "servidor", Address.from("localhost", port),
+        File f = new File(args);
+
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(f));
+
+            String aux = br.readLine();
+            String[] p = aux.split(":");
+
+            this.ms = new NettyMessagingService(
+                "servidor", Address.from(p[0], Integer.parseInt(p[1])),
                 new MessagingConfig());
+
+            this.servers = new ArrayList<>();
+
+            while((aux = br.readLine()) != null) {
+                p = aux.split(":");
+                this.servers.add(Address.from(p[0],Integer.parseInt(p[1])));
+            }
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         this.es = Executors.newFixedThreadPool(1);
 
@@ -43,9 +66,9 @@ public class Server
 
         this.chirps = new HashMap<>();
 
-        this.servers = new ArrayList<>(servers);
-
         this.s = new SerializerBuilder().addType(Msg.class).build();
+
+        this.timeStamp = 0;
     }
 
     public void run()

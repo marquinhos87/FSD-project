@@ -31,31 +31,15 @@ public class ServerMain
             try
             {
                 // check usage and parse arguments
-
-                final var port = parseArgs(args);
-                final var n_servers = Integer.parseUnsignedInt(args[1]);
-
-                if (port.isEmpty() || args.length != 2)
+                if (args.length != 1)
                 {
-                    err.println("Usage: chirper-server <N servers> [<port>]");
+                    err.println("Usage: chirper-server <Conf File>");
                     err.flush();
                     System.exit(2);
                 }
 
                 // run server
-
-                int p = port.getAsInt();
-                List<Address> servers = new ArrayList<>();
-
-                for (int i = p; i < (p + n_servers); i+=1)
-                {
-                    if (i > p)
-                    {
-                        servers.add(Address.from("localhost",i));
-                    }
-                }
-
-                new Server(port.getAsInt(),servers).run();
+                new Server(args[0]).run();
 
             }
             catch (Exception e)
