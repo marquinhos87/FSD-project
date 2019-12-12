@@ -3,4 +3,3 @@ localPeer: { id: 1, port: 7001 }
 
 remotePeers:
     - { id: 2, host: localhost, port: 7002 }
-    - { id: 3, host: localhost, port: 7003 }

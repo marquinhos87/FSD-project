@@ -7,6 +7,7 @@ import chirper.shared.Util;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /* -------------------------------------------------------------------------- */
 
@@ -25,7 +26,7 @@ public class PeerMain
 
                 if (args.length != 1)
                 {
-                    err.println("Usage: chirper-peer <config>");
+                    err.println("Usage: chirper-peer <config_file>");
                     err.flush();
                     System.exit(2);
                 }
@@ -40,13 +41,14 @@ public class PeerMain
                     config.getLocalPeerId(),
                     config.getLocalPeerPort(),
                     config.getRemotePeerIds()
-                    );
+                );
 
                 peer.run();
             }
             catch (Exception e)
             {
                 Util.printError(err, e.getMessage());
+                e.printStackTrace();
                 System.exit(1);
             }
         }

@@ -1,0 +1,5 @@
+
+localPeer: { id: 2, port: 7002 }
+
+remotePeers:
+    - { id: 1, host: localhost, port: 7001 }
