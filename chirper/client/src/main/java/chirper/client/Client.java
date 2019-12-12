@@ -11,8 +11,12 @@ import io.atomix.utils.serializer.Serializer;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 /* -------------------------------------------------------------------------- */
 
@@ -27,6 +31,9 @@ public class Client implements AutoCloseable
     // the message encoder and decoder
     private final Serializer serializer;
 
+    // the set of currently subscribed topics
+    private final Set< String > subscribedTopics;
+
     public Client(Address serverAddress)
     {
         this.serverAddress = serverAddress;
@@ -36,6 +43,8 @@ public class Client implements AutoCloseable
         );
 
         this.serializer = Serializer.builder().build();
+
+        this.subscribedTopics = new HashSet<>();
 
 //        final var executor = Executors.newFixedThreadPool(1);
 //
@@ -61,14 +70,17 @@ public class Client implements AutoCloseable
         this.messaging.stop().join();
     }
 
+    public Set< String > getSubscribedTopics()
+    {
+        return Collections.unmodifiableSet(this.subscribedTopics);
+    }
+
     public void setSubscribedTopics(CharSequence[] topics)
-        throws ExecutionException, InterruptedException
     {
         this.setSubscribedTopics(Arrays.asList(topics));
     }
 
     public void setSubscribedTopics(Collection< ? extends CharSequence > topics)
-        throws ExecutionException, InterruptedException
     {
         // validate topics
 
@@ -76,22 +88,12 @@ public class Client implements AutoCloseable
             topics
             .stream()
             .map(Util::normalizeTopic)
-            .toArray(String[]::new);
+            .collect(Collectors.toSet());
 
-        if (newTopics.length == 0)
-            throw new IllegalArgumentException("must have at least one topic");
+        // modify set of subscribed topics
 
-        // send subscribe request and await reply
-
-        final var reqPayload = this.serializer.encode(newTopics);
-        final var replyPayload = this.sendAndReceive("subscribe", reqPayload);
-
-        // check if the server replied with an error
-
-        final var errorMessage = this.serializer.< String >decode(replyPayload);
-
-        if (!errorMessage.isEmpty())
-            throw new IllegalArgumentException(errorMessage);
+        this.subscribedTopics.clear();
+        this.subscribedTopics.addAll(newTopics);
 
 //        this.subscribedTopics.clear();
 //        this.subscribedTopics.addAll(newTopics);
@@ -106,11 +108,17 @@ public class Client implements AutoCloseable
     public List< String > getLatestChirps()
         throws ExecutionException, InterruptedException
     {
+        // encode get request payload
+
+        final var reqPayload = this.serializer.encode(
+            this.subscribedTopics.toArray(String[]::new)
+        );
+
         // send get request and await reply
 
-        final var replyPayload = this.sendAndReceive("get", new byte[0]);
+        final var replyPayload = this.sendAndReceive("get", reqPayload);
 
-        // decode and return the latest chirps
+        // decode reply payload and return the latest chirps
 
         return List.of(this.serializer.< String[] >decode(replyPayload));
     }
@@ -127,14 +135,19 @@ public class Client implements AutoCloseable
             );
         }
 
-        // send publish request and await reply
+        // encode publish request payload
 
         final var reqPayload = this.serializer.encode(chirp.toString());
+
+        // send publish request and await reply
+
         final var replyPayload = this.sendAndReceive("publish", reqPayload);
 
-        // check if the server replied with an error
+        // decode reply payload
 
         final var errorMessage = this.serializer.< String >decode(replyPayload);
+
+        // check if the server replied with an error
 
         if (!errorMessage.isEmpty())
             throw new IllegalArgumentException(errorMessage);
