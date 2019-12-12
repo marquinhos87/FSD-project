@@ -9,10 +9,10 @@ import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Serializer;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 
 /* -------------------------------------------------------------------------- */
 
@@ -27,14 +27,6 @@ public class Client implements AutoCloseable
     // the message encoder and decoder
     private final Serializer serializer;
 
-
-
-
-//    private ManagedMessagingService ms;
-//    private Serializer s;
-//    private final Set< String > subscribedTopics;
-//    private Address address_server;
-
     public Client(Address serverAddress)
     {
         this.serverAddress = serverAddress;
@@ -43,16 +35,11 @@ public class Client implements AutoCloseable
             "chirper", Address.local(), new MessagingConfig()
         );
 
-        this.serializer =
-            Serializer
-            .builder()
-            .withTypes(MsgSubscribe.class, MsgGet.class, MsgPublish.class)
-            .build();
+        this.serializer = Serializer.builder().build();
 
 //        final var executor = Executors.newFixedThreadPool(1);
 //
 //        this.messaging.registerHandler("publish-ack", this::handlePublishAck, executor);
-
 //
 //        this.address_server = new Address(socketAddress.getHostName(), socketAddress.getPort());
 //
@@ -74,7 +61,14 @@ public class Client implements AutoCloseable
         this.messaging.stop().join();
     }
 
+    public void setSubscribedTopics(CharSequence[] topics)
+        throws ExecutionException, InterruptedException
+    {
+        this.setSubscribedTopics(Arrays.asList(topics));
+    }
+
     public void setSubscribedTopics(Collection< ? extends CharSequence > topics)
+        throws ExecutionException, InterruptedException
     {
         // validate topics
 
@@ -82,10 +76,22 @@ public class Client implements AutoCloseable
             topics
             .stream()
             .map(Util::normalizeTopic)
-            .collect(Collectors.toList());
+            .toArray(String[]::new);
 
-        if (newTopics.isEmpty())
-            throw new IllegalArgumentException("No topics specified.");
+        if (newTopics.length == 0)
+            throw new IllegalArgumentException("must have at least one topic");
+
+        // send subscribe request and await reply
+
+        final var reqPayload = this.serializer.encode(newTopics);
+        final var replyPayload = this.sendAndReceive("subscribe", reqPayload);
+
+        // check if the server replied with an error
+
+        final var errorMessage = this.serializer.< String >decode(replyPayload);
+
+        if (!errorMessage.isEmpty())
+            throw new IllegalArgumentException(errorMessage);
 
 //        this.subscribedTopics.clear();
 //        this.subscribedTopics.addAll(newTopics);
@@ -109,7 +115,7 @@ public class Client implements AutoCloseable
         return List.of(this.serializer.< String[] >decode(replyPayload));
     }
 
-    public void publishChirp(String chirp)
+    public void publishChirp(CharSequence chirp)
         throws ExecutionException, InterruptedException
     {
         // validate chirp
@@ -123,8 +129,8 @@ public class Client implements AutoCloseable
 
         // send publish request and await reply
 
-        final var requestPayload = this.serializer.encode(chirp);
-        final var replyPayload = this.sendAndReceive("publish", requestPayload);
+        final var reqPayload = this.serializer.encode(chirp.toString());
+        final var replyPayload = this.sendAndReceive("publish", reqPayload);
 
         // check if the server replied with an error
 

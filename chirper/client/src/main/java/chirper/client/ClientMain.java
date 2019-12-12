@@ -3,6 +3,7 @@
 package chirper.client;
 
 import chirper.shared.Util;
+import io.atomix.utils.net.Address;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -30,18 +31,18 @@ public class ClientMain
             {
                 // check usage and parse arguments
 
-                final var socketAddress = parseArgs(args);
+                final var serverAddress = parseArgs(args);
 
-                if (socketAddress.isEmpty())
+                if (serverAddress.isEmpty())
                 {
-                    err.println("Usage: chirper <host> [<port>]");
+                    err.println("Usage: chirper <server_endpoint>");
                     err.flush();
                     System.exit(2);
                 }
 
                 // run client and input loop
 
-                try (final var client = new Client(socketAddress.get()))
+                try (final var client = new Client(serverAddress))
                 {
                     client.start();
                     new Prompt(client, in, out).inputLoop();
