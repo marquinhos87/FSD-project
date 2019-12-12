@@ -4,7 +4,6 @@ package chirper.server;
 
 import chirper.shared.Util;
 
-import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.file.Path;
@@ -13,7 +12,7 @@ import java.nio.file.Path;
 
 public class PeerMain
 {
-    public static void main(String[] args) throws IOException
+    public static void main(String[] args)
     {
         try (
             final var out = new PrintWriter(new OutputStreamWriter(System.out));
