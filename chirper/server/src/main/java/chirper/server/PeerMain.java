@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.file.Path;
-import java.util.OptionalInt;
 
 /* -------------------------------------------------------------------------- */
 
@@ -27,7 +26,7 @@ public class PeerMain
 
                 if (args.length != 1)
                 {
-                    err.println("Usage: chirper-server <config>");
+                    err.println("Usage: chirper-peer <config>");
                     err.flush();
                     System.exit(2);
                 }
@@ -52,33 +51,6 @@ public class PeerMain
                 System.exit(1);
             }
         }
-    }
-
-    private static OptionalInt parseArgs(String[] args)
-    {
-        int port;
-
-        if (args.length == 1)
-        {
-            port = Config.DEFAULT_PORT;
-        }
-        else if (args.length == 2)
-        {
-            try
-            {
-                port = Integer.parseUnsignedInt(args[2]);
-            }
-            catch (NumberFormatException e)
-            {
-                throw new IllegalArgumentException("Invalid port number.");
-            }
-        }
-        else
-        {
-            return OptionalInt.empty();
-        }
-
-        return OptionalInt.of(port);
     }
 }
 
