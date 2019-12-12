@@ -2,7 +2,6 @@
 
 package chirper.server;
 
-import chirper.shared.Peer;
 import chirper.shared.Util;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingService;
@@ -26,13 +25,13 @@ import java.util.stream.Collectors;
 
 /* -------------------------------------------------------------------------- */
 
-public class NewServer
+public class Peer
 {
     // the identifier of this peer
     private final int localPeerId;
 
     // the identifiers of all remote peers keyed by their addresses
-    private final Map< Address, Integer > peers;
+    private final Map< Address, PeerId > peerIds;
 
     // the messaging service
     private final MessagingService messaging;
@@ -53,20 +52,17 @@ public class NewServer
      *
      * @param localPeerId the identifier of this peer
      * @param localPeerPort the port to be used by this peer
-     * @param peers all remote peers
+     * @param peerIds all remote peer identifiers keyed by their addresses
      */
-    public NewServer(
+    public Peer(
         int localPeerId,
         int localPeerPort,
-        Collection< Peer > peers
+        Map< Address, PeerId > peerIds
     )
     {
         this.localPeerId = localPeerId;
 
-        this.peers =
-            peers
-            .stream()
-            .collect(Collectors.toUnmodifiableMap(Peer::getAddress, Peer::getId));
+        this.peerIds = new HashMap<>(peerIds);
 
         this.messaging = new NettyMessagingService(
             "chirper", Address.from(localPeerPort), new MessagingConfig()
@@ -159,7 +155,7 @@ public class NewServer
         final var timestamp = this.clock++;
 
         this.pendingChirps.put(
-            timestamp, new PendingChirp(this.peers.values(), future)
+            timestamp, new PendingChirp(this.peerIds.values(), future)
         );
 
         // send chirp to peers
@@ -168,7 +164,7 @@ public class NewServer
             new MsgChirp(timestamp, chirp)
         );
 
-        for (final var peerAddress : this.peers.keySet())
+        for (final var peerAddress : this.peerIds.keySet())
         {
             future = CompletableFuture.allOf(
                 future,
@@ -187,7 +183,7 @@ public class NewServer
 
     private void handleChirp(Address from, byte[] payload)
     {
-        final var fromId = this.peers.get(from);
+        final var fromId = this.peerIds.get(from);
         final var msg = this.serializer.< MsgChirp >decode(payload);
 
         this.clock = Math.max(this.clock, msg.timestamp) + 1;
@@ -199,7 +195,7 @@ public class NewServer
 
     private void handleAck(Address from, byte[] payload)
     {
-        final var fromId = this.peers.get(from);
+        final var fromId = this.peerIds.get(from);
         final var msg = this.serializer.< MsgAck >decode(payload);
 
         this.pendingChirps.get(msg.chirpTimestamp).ackPeer(fromId);
@@ -232,11 +228,11 @@ class MsgAck
 
 class PendingChirp
 {
-    private final Set< Integer > unackedPeerIds;
+    private final Set< PeerId > unackedPeerIds;
     private final CompletableFuture< Void > onAllAcked;
 
     public PendingChirp(
-        Collection< Integer > peerIds,
+        Collection< PeerId > peerIds,
         CompletableFuture< Void > onAllAcked
     )
     {
@@ -244,7 +240,7 @@ class PendingChirp
         this.onAllAcked = onAllAcked;
     }
 
-    public void ackPeer(int peerId)
+    public void ackPeer(PeerId peerId)
     {
         this.unackedPeerIds.remove(peerId);
 
@@ -255,18 +251,18 @@ class PendingChirp
 
 class PublishedChirp
 {
-    private final int peerId;
+    private final PeerId peerId;
     private final long timestamp;
     private final String text;
 
-    public PublishedChirp(int peerId, long timestamp, String text)
+    public PublishedChirp(PeerId peerId, long timestamp, String text)
     {
         this.peerId = peerId;
         this.timestamp = timestamp;
         this.text = text;
     }
 
-    public int getPeerId()
+    public PeerId getPeerId()
     {
         return this.peerId;
     }
