@@ -10,10 +10,10 @@ import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Serializer;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,84 +28,33 @@ import java.util.stream.Collectors;
 
 public class NewServer
 {
-    private static class PendingChirp
-    {
-        private final long timestamp;
-        private final String text;
-
-        private final Set< Integer > unackedPeerIds;
-
-        public PendingChirp(
-            long timestamp,
-            String text,
-            Collection< Integer > peerIds
-        )
-        {
-            this.timestamp = timestamp;
-            this.text = text;
-            this.unackedPeerIds = new HashSet<>(peerIds);
-        }
-
-        public long getTimestamp()
-        {
-            return this.timestamp;
-        }
-
-        public String getText()
-        {
-            return this.text;
-        }
-
-        public Set< Integer > getUnackedPeerIds()
-        {
-            return Collections.unmodifiableSet(this.unackedPeerIds);
-        }
-
-        public void ackPeer(int peerId)
-        {
-            this.unackedPeerIds.remove(peerId);
-        }
-    }
-
-    private static class PublishedChirp
-    {
-        private final int peerId;
-        private final long timestamp;
-        private final String text;
-
-        public PublishedChirp(int peerId, long timestamp, String text)
-        {
-            this.peerId = peerId;
-            this.timestamp = timestamp;
-            this.text = text;
-        }
-
-        public int getPeerId()
-        {
-            return this.peerId;
-        }
-
-        public long getTimestamp()
-        {
-            return this.timestamp;
-        }
-
-        public String getText()
-        {
-            return this.text;
-        }
-    }
-
+    // the identifier of this peer
     private final int localPeerId;
-    private final Map< Address, Peer > peers;
 
+    // the identifiers of all remote peers keyed by their addresses
+    private final Map< Address, Integer > peers;
+
+    // the messaging service
     private final MessagingService messaging;
+
+    // the message encoder and decoder
     private final Serializer serializer;
 
+    // the timestamp of the next chirp published by this peer
     private long clock;
-    private final List< PendingChirp > pendingChirps;
+
+    // all chirps being published by this peer keyed by their timestamps
+    private final Map< Long, PendingChirp > pendingChirps;
+
+    // all published chirps in their global total order
     private final SortedSet< PublishedChirp > publishedChirps;
 
+    /**
+     *
+     * @param localPeerId the identifier of this peer
+     * @param localPeerPort the port to be used by this peer
+     * @param peers all remote peers
+     */
     public NewServer(
         int localPeerId,
         int localPeerPort,
@@ -117,7 +66,7 @@ public class NewServer
         this.peers =
             peers
             .stream()
-            .collect(Collectors.toUnmodifiableMap(Peer::getAddress, p -> p));
+            .collect(Collectors.toUnmodifiableMap(Peer::getAddress, Peer::getId));
 
         this.messaging = new NettyMessagingService(
             "chirper", Address.from(localPeerPort), new MessagingConfig()
@@ -131,7 +80,7 @@ public class NewServer
 
         this.clock = Long.MIN_VALUE;
 
-        this.pendingChirps = new ArrayList<>();
+        this.pendingChirps = new HashMap<>();
 
         this.publishedChirps = new TreeSet<>(
             Comparator
@@ -147,6 +96,14 @@ public class NewServer
     }
 
     /**
+     * Gets the most recent chirps with the given topics.
+     *
+     * Only up to {@param maxChirps} are returned in the list.
+     *
+     * The list is unmodifiable.
+     *
+     * Thread-safety: Safe to call at any time from any context.
+     *
      * @param topics
      * @param maxChirps
      * @return
@@ -195,34 +152,133 @@ public class NewServer
      */
     public CompletableFuture< Void > publishChirp(String chirp)
     {
-        final var payload = this.serializer.encode(
-            new MsgChirp(this.clock++, chirp)
+        var future = new CompletableFuture< Void >();
+
+        // create pending chirp
+
+        final var timestamp = this.clock++;
+
+        this.pendingChirps.put(
+            timestamp, new PendingChirp(this.peers.values(), future)
         );
 
-        for (final var peer : this.peers)
+        // send chirp to peers
+
+        final var payload = this.serializer.encode(
+            new MsgChirp(timestamp, chirp)
+        );
+
+        for (final var peerAddress : this.peers.keySet())
         {
-            this.messaging.sendAsync(peer, "msg", payload)
+            future = CompletableFuture.allOf(
+                future,
+                this.messaging.sendAsync(peerAddress, "chirp", payload)
+            );
         }
 
-        CompletableFuture.allOf()
-    }
+        return future.thenRun(() -> {
+            this.pendingChirps.remove(timestamp);
 
-    private CompletableFuture< Void > send(Address to, byte[] payload)
-    {
-        return this.messaging.sendAsync(to, "msg", payload);
+            this.publishedChirps.add(
+                new PublishedChirp(this.localPeerId, timestamp, chirp)
+            );
+        });
     }
 
     private void handleChirp(Address from, byte[] payload)
     {
-        final var fromId = this.peers.indexOf(from);
+        final var fromId = this.peers.get(from);
         final var msg = this.serializer.< MsgChirp >decode(payload);
 
         this.clock = Math.max(this.clock, msg.timestamp) + 1;
+
+        this.publishedChirps.add(new PublishedChirp(
+            fromId, msg.timestamp, msg.text
+        ));
     }
 
     private void handleAck(Address from, byte[] payload)
     {
+        final var fromId = this.peers.get(from);
+        final var msg = this.serializer.< MsgAck >decode(payload);
 
+        this.pendingChirps.get(msg.chirpTimestamp).ackPeer(fromId);
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+
+class MsgChirp
+{
+    public final long timestamp;
+    public final String text;
+
+    public MsgChirp(long timestamp, String text)
+    {
+        this.timestamp = timestamp;
+        this.text = text;
+    }
+}
+
+class MsgAck
+{
+    public final long chirpTimestamp;
+
+    public MsgAck(long chirpTimestamp)
+    {
+        this.chirpTimestamp = chirpTimestamp;
+    }
+}
+
+class PendingChirp
+{
+    private final Set< Integer > unackedPeerIds;
+    private final CompletableFuture< Void > onAllAcked;
+
+    public PendingChirp(
+        Collection< Integer > peerIds,
+        CompletableFuture< Void > onAllAcked
+    )
+    {
+        this.unackedPeerIds = new HashSet<>(peerIds);
+        this.onAllAcked = onAllAcked;
+    }
+
+    public void ackPeer(int peerId)
+    {
+        this.unackedPeerIds.remove(peerId);
+
+        if (this.unackedPeerIds.isEmpty())
+            this.onAllAcked.complete(null);
+    }
+}
+
+class PublishedChirp
+{
+    private final int peerId;
+    private final long timestamp;
+    private final String text;
+
+    public PublishedChirp(int peerId, long timestamp, String text)
+    {
+        this.peerId = peerId;
+        this.timestamp = timestamp;
+        this.text = text;
+    }
+
+    public int getPeerId()
+    {
+        return this.peerId;
+    }
+
+    public long getTimestamp()
+    {
+        return this.timestamp;
+    }
+
+    public String getText()
+    {
+        return this.text;
     }
 }
 
