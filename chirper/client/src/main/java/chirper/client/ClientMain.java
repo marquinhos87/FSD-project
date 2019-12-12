@@ -4,16 +4,13 @@ package chirper.client;
 
 import chirper.shared.Util;
 import io.atomix.utils.net.Address;
+import io.atomix.utils.net.MalformedAddressException;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
-import java.util.Optional;
 
 /* -------------------------------------------------------------------------- */
 
@@ -33,7 +30,7 @@ public class ClientMain
 
                 final var serverAddress = parseArgs(args);
 
-                if (serverAddress.isEmpty())
+                if (serverAddress == null)
                 {
                     err.println("Usage: chirper <server_endpoint>");
                     err.flush();
@@ -56,34 +53,19 @@ public class ClientMain
         }
     }
 
-    private static Optional< InetSocketAddress > parseArgs(String[] args)
-        throws UnknownHostException
+    private static Address parseArgs(String[] args)
     {
-        // check number of arguments
-
-        if (args.length != 2)
-            return Optional.empty();
-
-        // parse (and resolve) host
-
-        final var address = InetAddress.getByName(args[0]);
-
-        // parse port
-
-        final int port;
+        if (args.length != 1)
+            return null;
 
         try
         {
-            port = Integer.parseUnsignedInt(args[1]);
+            return Address.from(args[0]);
         }
-        catch (NumberFormatException e)
+        catch (MalformedAddressException e)
         {
-            throw new IllegalArgumentException("Invalid port number.");
+            return null;
         }
-
-        // return socket address
-
-        return Optional.of(new InetSocketAddress(address, port));
     }
 }
 

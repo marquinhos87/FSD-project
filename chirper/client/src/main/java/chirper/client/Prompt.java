@@ -5,7 +5,9 @@ package chirper.client;
 import chirper.shared.Util;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
 
 /* -------------------------------------------------------------------------- */
@@ -29,7 +31,8 @@ public class Prompt
         this.out = out;
     }
 
-    public void inputLoop() throws Exception
+    public void inputLoop()
+        throws ExecutionException, IOException, InterruptedException
     {
         while (true)
         {
@@ -53,6 +56,7 @@ public class Prompt
     }
 
     private void handleLine(String line)
+        throws ExecutionException, InterruptedException
     {
         final var commandMatcher = COMMAND_PATTERN.matcher(line);
 
@@ -125,7 +129,7 @@ public class Prompt
         }
     }
 
-    private void handleGet()
+    private void handleGet() throws ExecutionException, InterruptedException
     {
         if (this.client.getSubscribedTopics().isEmpty())
         {
@@ -165,6 +169,7 @@ public class Prompt
     }
 
     private void handlePublish(String chirp)
+        throws ExecutionException, InterruptedException
     {
         try
         {
