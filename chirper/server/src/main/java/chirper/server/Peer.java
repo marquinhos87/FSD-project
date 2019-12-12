@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 public class Peer
 {
     // the identifier of this peer
-    private final int localPeerId;
+    private final PeerId localPeerId;
 
     // the identifiers of all remote peers keyed by their addresses
     private final Map< Address, PeerId > peerIds;
@@ -55,7 +55,7 @@ public class Peer
      * @param peerIds all remote peer identifiers keyed by their addresses
      */
     public Peer(
-        int localPeerId,
+        PeerId localPeerId,
         int localPeerPort,
         Map< Address, PeerId > peerIds
     )
