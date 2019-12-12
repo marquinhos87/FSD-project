@@ -2,25 +2,18 @@
 
 package chirper.server;
 
-import chirper.shared.Config;
 import chirper.shared.Util;
-import io.atomix.utils.net.Address;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.nio.file.Path;
 import java.util.OptionalInt;
 
 /* -------------------------------------------------------------------------- */
 
-public class ServerMain
+public class PeerMain
 {
-
-
-
     public static void main(String[] args) throws IOException
     {
         try (
@@ -31,16 +24,27 @@ public class ServerMain
             try
             {
                 // check usage and parse arguments
+
                 if (args.length != 1)
                 {
-                    err.println("Usage: chirper-server <Conf File>");
+                    err.println("Usage: chirper-server <config>");
                     err.flush();
                     System.exit(2);
                 }
 
-                // run server
-                new Server(args[0]).run();
+                // parse peer config
 
+                final var config = Config.parseYamlFile(Path.of(args[0]));
+
+                // run peer
+
+                final var peer = new Peer(
+                    config.getLocalPeerId(),
+                    config.getLocalPeerPort(),
+                    config.getRemotePeerIds()
+                    );
+
+                peer.run();
             }
             catch (Exception e)
             {

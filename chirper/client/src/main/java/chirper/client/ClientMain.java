@@ -2,8 +2,8 @@
 
 package chirper.client;
 
-import chirper.shared.Config;
 import chirper.shared.Util;
+import io.atomix.utils.net.Address;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -31,18 +31,18 @@ public class ClientMain
             {
                 // check usage and parse arguments
 
-                final var socketAddress = parseArgs(args);
+                final var serverAddress = parseArgs(args);
 
-                if (socketAddress.isEmpty())
+                if (serverAddress.isEmpty())
                 {
-                    err.println("Usage: chirper <host> [<port>]");
+                    err.println("Usage: chirper <host> <port>");
                     err.flush();
                     System.exit(2);
                 }
 
                 // run client and input loop
 
-                try (final var client = new Client(socketAddress.get()))
+                try (final var client = new Client(serverAddress.get()))
                 {
                     client.start();
                     new Prompt(client, in, out).inputLoop();
@@ -56,13 +56,14 @@ public class ClientMain
         }
     }
 
-    private static Optional< InetSocketAddress > parseArgs(String[] args)
-        throws UnknownHostException
+    private static Optional< Address > parseArgs(String[] args)
     {
         // check number of arguments
 
-        if (args.length != 1 && args.length != 2)
+        if (args.length != 2)
             return Optional.empty();
+
+        return new Address()
 
         // parse (and resolve) host
 
@@ -70,22 +71,15 @@ public class ClientMain
 
         // parse port
 
-        int port;
+        final int port;
 
-        if (args.length == 1)
+        try
         {
-            port = Config.DEFAULT_PORT;
+            port = Integer.parseUnsignedInt(args[1]);
         }
-        else
+        catch (NumberFormatException e)
         {
-            try
-            {
-                port = Integer.parseUnsignedInt(args[1]);
-            }
-            catch (NumberFormatException e)
-            {
-                throw new IllegalArgumentException("Invalid port number.");
-            }
+            throw new IllegalArgumentException("Invalid port number.");
         }
 
         // return socket address

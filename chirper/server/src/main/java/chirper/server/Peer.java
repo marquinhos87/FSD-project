@@ -21,6 +21,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /* -------------------------------------------------------------------------- */
@@ -84,11 +85,19 @@ public class Peer
             .thenComparingLong(PublishedChirp::getTimestamp)
             .reversed()
         );
+    }
 
+    /**
+     *
+     */
+    public void run() throws InterruptedException
+    {
         final var executor = Executors.newFixedThreadPool(1);
 
         this.messaging.registerHandler("chirp", this::handleChirp, executor);
         this.messaging.registerHandler("ack", this::handleAck, executor);
+
+        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
     }
 
     /**

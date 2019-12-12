@@ -1,4 +1,8 @@
+/* -------------------------------------------------------------------------- */
+
 package chirper.server;
+
+/* -------------------------------------------------------------------------- */
 
 /**
  * Just a wrapper around an int. Exists for type safety.
@@ -25,3 +29,5 @@ public class PeerId implements Comparable< PeerId >
         return Integer.compare(this.getValue(), other.getValue());
     }
 }
+
+/* -------------------------------------------------------------------------- */
