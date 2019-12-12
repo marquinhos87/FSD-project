@@ -2,21 +2,15 @@
 
 package chirper.client;
 
-import chirper.shared.Msg;
 import chirper.shared.Util;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Serializer;
-import io.atomix.utils.serializer.SerializerBuilder;
 
-import java.net.InetSocketAddress;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
@@ -24,42 +18,65 @@ import java.util.stream.Collectors;
 
 public class Client implements AutoCloseable
 {
-    private ManagedMessagingService ms;
-    private Serializer s;
-    private final Set< String > subscribedTopics;
-    private Address address_server;
+    // the address of the server this client is connected to
+    private final Address serverAddress;
 
-    public Client(InetSocketAddress socketAddress)
+    // the messaging service
+    private final ManagedMessagingService messaging;
+
+    // the message encoder and decoder
+    private final Serializer serializer;
+
+
+
+
+//    private ManagedMessagingService ms;
+//    private Serializer s;
+//    private final Set< String > subscribedTopics;
+//    private Address address_server;
+
+    public Client(Address serverAddress)
     {
-        this.address_server = new Address(socketAddress.getHostName(), socketAddress.getPort());
+        this.serverAddress = serverAddress;
 
-        this.ms = new NettyMessagingService(
-                "servidor", new Address(socketAddress.getHostName(), 12345),
-                new MessagingConfig());
+        this.messaging = new NettyMessagingService(
+            "chirper", Address.local(), new MessagingConfig()
+        );
 
-        this.s = new SerializerBuilder().addType(Msg.class).build();
+        this.serializer =
+            Serializer
+            .builder()
+            .withTypes(MsgSubscribe.class, MsgGet.class, MsgPublish.class)
+            .build();
 
-        this.subscribedTopics = new HashSet<>();
+//        final var executor = Executors.newFixedThreadPool(1);
+//
+//        this.messaging.registerHandler("publish-ack", this::handlePublishAck, executor);
+
+//
+//        this.address_server = new Address(socketAddress.getHostName(), socketAddress.getPort());
+//
+//        this.ms = new NettyMessagingService(
+//                "servidor", new Address(socketAddress.getHostName(), 12345),
+//                new MessagingConfig());
+//
+//        this.s = new SerializerBuilder().addType(Msg.class).build();
     }
 
     public void start()
     {
-        this.ms.start();
+        this.messaging.start().join();
     }
 
-    public Set< String > getSubscribedTopics()
+    @Override
+    public void close()
     {
-        return Collections.unmodifiableSet(this.subscribedTopics);
-    }
-
-    public void setSubscribedTopics(CharSequence[] topics)
-    {
-        this.setSubscribedTopics(List.of(topics));
+        this.messaging.stop().join();
     }
 
     public void setSubscribedTopics(Collection< ? extends CharSequence > topics)
     {
-        // note: must validate new topics before modifying subscribed topic set
+        // validate topics
 
         final var newTopics =
             topics
@@ -70,26 +87,33 @@ public class Client implements AutoCloseable
         if (newTopics.isEmpty())
             throw new IllegalArgumentException("No topics specified.");
 
-        this.subscribedTopics.clear();
-        this.subscribedTopics.addAll(newTopics);
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("!sub ");
-        for(final var aux: this.subscribedTopics)
-            sb.append(aux).append(" ");
-        sendMsgAsync(sb.toString());
-
-        // TODO: implement
+//        this.subscribedTopics.clear();
+//        this.subscribedTopics.addAll(newTopics);
+//
+//        StringBuilder sb = new StringBuilder();
+//        sb.append("!sub ");
+//        for(final var aux: this.subscribedTopics)
+//            sb.append(aux).append(" ");
+//        sendMsgAsync(sb.toString());
     }
 
-    public List< String > getLatestChirps() {
-        final var chirps = sendMsgSync("!get");
-
-        return List.of(chirps.split("\n")); // TODO: implement
-    }
-
-    public void publishChirp(CharSequence chirp)
+    public List< String > getLatestChirps()
+        throws ExecutionException, InterruptedException
     {
+        // send get request and await reply
+
+        final var replyPayload = this.sendAndReceive("get", new byte[0]);
+
+        // decode and return the latest chirps
+
+        return List.of(this.serializer.< String[] >decode(replyPayload));
+    }
+
+    public void publishChirp(String chirp)
+        throws ExecutionException, InterruptedException
+    {
+        // validate chirp
+
         if (!Util.chirpContainsTopics(chirp))
         {
             throw new IllegalArgumentException(
@@ -97,33 +121,45 @@ public class Client implements AutoCloseable
             );
         }
 
-        // TODO: implement
-        sendMsgAsync(chirp);
+        // send publish request and await reply
 
+        final var requestPayload = this.serializer.encode(chirp);
+        final var replyPayload = this.sendAndReceive("publish", requestPayload);
+
+        // check if the server replied with an error
+
+        final var errorMessage = this.serializer.< String >decode(replyPayload);
+
+        if (!errorMessage.isEmpty())
+            throw new IllegalArgumentException(errorMessage);
     }
 
-    public void sendMsgAsync(CharSequence chirp)
+    private byte[] sendAndReceive(String type, byte[] payload)
+        throws ExecutionException, InterruptedException
     {
-        Msg m = new Msg(chirp.toString());
-        ms.sendAsync(address_server, "cliente", s.encode(m));
+        return
+            this
+            .messaging
+            .sendAndReceive(this.serverAddress, type, payload)
+            .get();
     }
 
-    public String sendMsgSync(CharSequence action) {
-        Msg m = new Msg(action.toString());
-        byte[] response = new byte[0];
-        try {
-            response = ms.sendAndReceive(address_server,"cliente",s.encode(m)).get();
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
-        return new String(response);
-    }
+//    public void sendMsgAsync(CharSequence chirp)
+//    {
+//        Msg m = new Msg(chirp.toString());
+//        ms.sendAsync(address_server, "cliente", s.encode(m));
+//    }
 
-    @Override
-    public void close() throws Exception
-    {
-        // TODO: implement
-    }
+//    public String sendMsgSync(CharSequence action) {
+//        Msg m = new Msg(action.toString());
+//        byte[] response = new byte[0];
+//        try {
+//            response = ms.sendAndReceive(address_server,"cliente",s.encode(m)).get();
+//        } catch (InterruptedException | ExecutionException e) {
+//            e.printStackTrace();
+//        }
+//        return new String(response);
+//    }
 }
 
 /* -------------------------------------------------------------------------- */
