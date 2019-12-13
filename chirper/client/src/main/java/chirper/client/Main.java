@@ -17,7 +17,7 @@ import java.io.PrintWriter;
 /**
  * TODO: document
  */
-public class ClientMain
+public class Main
 {
     /**
      * TODO: document

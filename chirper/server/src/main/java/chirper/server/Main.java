@@ -11,7 +11,7 @@ import java.nio.file.Paths;
 
 /* -------------------------------------------------------------------------- */
 
-public class PeerMain
+public class Main
 {
     public static void main(String[] args)
     {
