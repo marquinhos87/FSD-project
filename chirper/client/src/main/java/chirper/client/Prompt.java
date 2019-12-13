@@ -7,8 +7,11 @@ import chirper.shared.Util;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /* -------------------------------------------------------------------------- */
 
@@ -18,7 +21,7 @@ import java.util.regex.Pattern;
 public class Prompt
 {
     private static final Pattern COMMAND_PATTERN = Pattern.compile(
-        "^\\s*!\\s*(?<command>\\w*)\\s+(?<args>.*)"
+        "^\\s*!\\s*(?<command>\\w*)(?<args>\\s*.*)$"
     );
 
     // TODO: document
@@ -48,12 +51,9 @@ public class Prompt
     /**
      * TODO: document
      *
-     * @throws ExecutionException TODO: document
      * @throws IOException TODO: document
-     * @throws InterruptedException TODO: document
      */
-    public void inputLoop()
-        throws ExecutionException, IOException, InterruptedException
+    public void inputLoop() throws IOException
     {
         while (true)
         {
@@ -69,7 +69,6 @@ public class Prompt
             if (line == null)
             {
                 // no more input, exit input loop
-                this.out.println();
                 Util.printWarning(this.out, "Exiting...");
                 break;
             }
@@ -82,7 +81,6 @@ public class Prompt
     }
 
     private void handleLine(String line)
-        throws ExecutionException, InterruptedException
     {
         final var commandMatcher = COMMAND_PATTERN.matcher(line);
 
@@ -136,7 +134,7 @@ public class Prompt
         }
     }
 
-    private void handleGet() throws ExecutionException, InterruptedException
+    private void handleGet()
     {
         if (this.client.getSubscribedTopics().isEmpty())
         {
@@ -144,7 +142,17 @@ public class Prompt
         }
         else
         {
-            final var chirps = this.client.getLatestChirps();
+            final List< String > chirps;
+
+            try
+            {
+                chirps = this.client.getLatestChirps();
+            }
+            catch (Exception e)
+            {
+                Util.printError(this.out, e.getMessage());
+                return;
+            }
 
             if (chirps.isEmpty())
             {
@@ -167,7 +175,13 @@ public class Prompt
     {
         try
         {
-            this.client.setSubscribedTopics(topics.split("\\s+"));
+            this.client.setSubscribedTopics(
+                Pattern
+                    .compile("\\s+")
+                    .splitAsStream(topics)
+                    .filter(t -> !t.isBlank())
+                    .collect(Collectors.toList())
+            );
         }
         catch (IllegalArgumentException e)
         {
@@ -176,27 +190,26 @@ public class Prompt
     }
 
     private void handlePublish(String chirp)
-        throws ExecutionException, InterruptedException
     {
         try
         {
             this.client.publishChirp(chirp);
         }
-        catch (IllegalArgumentException e)
+        catch (Exception e)
         {
             Util.printError(this.out, e.getMessage());
         }
     }
 
-    private void handleLogin()
-    {
-        // TODO: implement
-    }
-
-    private void handleRegister()
-    {
-        // TODO: implement
-    }
+//    private void handleLogin()
+//    {
+//        // TODO: implement
+//    }
+//
+//    private void handleRegister()
+//    {
+//        // TODO: implement
+//    }
 }
 
 /* -------------------------------------------------------------------------- */

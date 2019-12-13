@@ -61,25 +61,15 @@ public class State
     }
 
     /**
-     * TODO: document
-     *
-     * @param topics TODO: document
-     *
-     * @return TODO: document
-     */
-    /**
      * Gets the most recent chirps with the given topics.
-     *
-     * Only up to {@param maxChirps} are returned in the list.
      *
      * The list is unmodifiable.
      *
      * Thread-safety: Safe to call at any time from any context.
      *
-     * @param topics
-     * @param maxChirps
+     * @param topics TODO: document
      *
-     * @return
+     * @return TODO: document
      */
     public List< String > getLatestChirps(CharSequence[] topics)
     {

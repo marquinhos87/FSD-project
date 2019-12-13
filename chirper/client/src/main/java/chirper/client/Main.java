@@ -30,41 +30,32 @@ public class Main
     {
         try (
             final var in = new BufferedReader(new InputStreamReader(System.in));
-            final var out = new PrintWriter(new OutputStreamWriter(System.out));
-            final var err = new PrintWriter(new OutputStreamWriter(System.err))
+            final var out = new PrintWriter(new OutputStreamWriter(System.out))
         )
         {
-//            try
-//            {
-                // check usage and parse arguments
+            // hack: suppress "illegal reflective access" warnings
 
-                final var serverAddress = parseArgs(args);
+            System.err.close();
+            System.setErr(System.out);
 
-                if (serverAddress == null)
-                {
-                    err.println("Usage: chirper <server_endpoint>");
-                    err.flush();
-                    System.exit(2);
-                }
+            // check usage and parse arguments
 
-                // hack: suppress "illegal reflective access" warnings
+            final var serverAddress = parseArgs(args);
 
-                System.err.close();
-                System.setErr(System.out);
+            if (serverAddress == null)
+            {
+                out.println("Usage: chirper <server_endpoint>");
+                out.flush();
+                System.exit(2);
+            }
 
-                // run client and input loop
+            // run client and input loop
 
-                try (final var client = new Client(serverAddress))
-                {
-                    client.start();
-                    new Prompt(client, in, out).inputLoop();
-                }
-//            }
-//            catch (Exception e)
-//            {
-//                Util.printError(err, e.getMessage());
-//                System.exit(1);
-//            }
+            try (final var client = new Client(serverAddress))
+            {
+                client.start();
+                new Prompt(client, in, out).inputLoop();
+            }
         }
     }
 
