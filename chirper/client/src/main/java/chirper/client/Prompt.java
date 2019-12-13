@@ -134,38 +134,35 @@ public class Prompt
 
     private void handleGet()
     {
-        if (this.client.getSubscribedTopics().isEmpty())
+        // get chirps
+
+        final List< String > chirps;
+
+        try
         {
-            Util.printError(this.out, "You are not subscribed to any topics.");
+            chirps = this.client.getLatestChirps();
+        }
+        catch (Exception e)
+        {
+            Util.printError(this.out, e.getMessage());
+            return;
+        }
+
+        // print chirps
+
+        if (chirps.isEmpty())
+        {
+            Util.printWarning(
+                this.out,
+                "No chirps exist for any of your subscribed topics."
+            );
         }
         else
         {
-            final List< String > chirps;
+            for (final var chirp : chirps)
+                this.out.println(chirp);
 
-            try
-            {
-                chirps = this.client.getLatestChirps();
-            }
-            catch (Exception e)
-            {
-                Util.printError(this.out, e.getMessage());
-                return;
-            }
-
-            if (chirps.isEmpty())
-            {
-                Util.printWarning(
-                    this.out,
-                    "No chirps exist for any of your subscribed topics."
-                );
-            }
-            else
-            {
-                for (final var chirp : chirps)
-                    this.out.println(chirp);
-
-                this.out.flush();
-            }
+            this.out.flush();
         }
     }
 
