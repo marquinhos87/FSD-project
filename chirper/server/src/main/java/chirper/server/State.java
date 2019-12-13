@@ -2,12 +2,18 @@
 
 package chirper.server;
 
+import chirper.shared.Config;
+import chirper.shared.Util;
+
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /* -------------------------------------------------------------------------- */
 
@@ -45,7 +51,7 @@ public class State
         }
     }
 
-    // TODO: document
+    // all chirps in reverse global total order
     private final SortedSet< Chirp > chirps;
 
     /**
@@ -107,7 +113,29 @@ public class State
         Collection< ? extends CharSequence > topics
     )
     {
+        // get matching chirps in reverse order
 
+        var stream = this.chirps.stream().map(Chirp::getText);
+
+        if (!topics.isEmpty())
+        {
+            stream = stream.filter(
+                c -> !Collections.disjoint(Util.getChirpTopics(c), topics)
+            );
+        }
+
+        final var latestChirps =
+            stream
+                .limit(Config.MAX_CHIRPS_PER_TOPIC)
+                .collect(Collectors.toList());
+
+        // reverse chirps back to original order
+
+        Collections.reverse(latestChirps);
+
+        // return chirps
+
+        return Collections.unmodifiableList(latestChirps);
     }
 }
 

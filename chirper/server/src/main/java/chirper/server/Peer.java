@@ -9,20 +9,15 @@ import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Serializer;
-import org.apache.commons.math3.analysis.function.Add;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -52,9 +47,7 @@ public class Peer implements AutoCloseable
     // all chirps being published by this peer, keyed by their timestamps
     private final Map< Long, PendingChirp > pendingChirps;
 
-    // all published chirps in reverse global total order
-    private final SortedSet< PublishedChirp > publishedChirps;
-
+    // TODO: document
     private final State state;
 
     /**
@@ -76,7 +69,8 @@ public class Peer implements AutoCloseable
      *
      * @param localPeerId the identifier of this peer
      * @param localPeerPort the port to be used by this peer
-     * @param remotePeerIds all remote peer identifiers keyed by their addresses
+     * @param remotePeerIds all remote peer identifiers keyed by their
+     *     addresses
      */
     public Peer(
         PeerId localPeerId,
@@ -95,20 +89,15 @@ public class Peer implements AutoCloseable
 
         this.serializer =
             Serializer
-            .builder()
-            .withTypes(MsgChirp.class, MsgAck.class)
-            .build();
+                .builder()
+                .withTypes(MsgChirp.class, MsgAck.class)
+                .build();
 
         this.clock = Long.MIN_VALUE;
 
         this.pendingChirps = new HashMap<>();
 
-        this.publishedChirps = new TreeSet<>(
-            Comparator
-            .comparing(PublishedChirp::getPeerId)
-            .thenComparingLong(PublishedChirp::getTimestamp)
-            .reversed()
-        );
+        this.state = new State();
 
         // register message handlers
 
@@ -149,6 +138,7 @@ public class Peer implements AutoCloseable
      *
      * @param topics
      * @param maxChirps
+     *
      * @return
      */
     public List< PublishedChirp > getChirps(
@@ -156,41 +146,18 @@ public class Peer implements AutoCloseable
         long maxChirps
     )
     {
-        // get matching chirps in reverse order
-
-        final List< PublishedChirp > chirps;
-
-        synchronized (this.publishedChirps)
-        {
-            chirps =
-                this
-                .publishedChirps
-                .stream()
-                .filter(c -> !Collections.disjoint(
-                    Util.getChirpTopics(c.getText()),
-                    topics
-                ))
-                .limit(maxChirps)
-                .collect(Collectors.toList());
-        }
-
-        // reverse chirps back to original order
-
-        Collections.reverse(chirps);
-
-        // return chirps
-
-        return Collections.unmodifiableList(chirps);
     }
 
     /**
-     * Publishes the given chirp, which should have been received from a client.
+     * Publishes the given chirp, which should have been received from a
+     * client.
      *
      * The returned future is completed when all peers have acknowledged the
      * chirp. This implies that, by the time the future is completed, all chirps
      * ordered before the chirp in question were received.
      *
      * @param chirp the chirp to be published
+     *
      * @return a future that is completed when all peers acknowledge the chirp
      */
     public CompletableFuture< Void > publishChirp(String chirp)
@@ -228,10 +195,7 @@ public class Peer implements AutoCloseable
         });
     }
 
-    private CompletableFuture< byte[] > handleClientGet(
-        Address from,
-        byte[] payload
-    )
+    private byte[] handleClientGet(Address from, byte[] payload)
     {
         final String[] topics = this.serializer.decode(payload);
 
@@ -239,15 +203,15 @@ public class Peer implements AutoCloseable
 
         final var chirps = this.state.getLatestChirps(topics);
 
-        this.serializer.encode(chirps.t);
-    }
+        return this.serializer.encode(chirps.toArray(String[]::new));
     }
 
-    private CompletableFuture< byte[] > handleClientPublish(
-        Address from,
-        byte[] payload
-    )
+    private byte[] handleClientPublish(Address from, byte[] payload)
     {
+        final String chirp = this.serializer.decode(payload);
+
+        // TODO: validate chirp
+
 
     }
 
@@ -318,34 +282,5 @@ class PendingChirp
             this.onAllAcked.complete(null);
     }
 }
-
-//class PublishedChirp
-//{
-//    private final PeerId peerId;
-//    private final long timestamp;
-//    private final String text;
-//
-//    public PublishedChirp(PeerId peerId, long timestamp, String text)
-//    {
-//        this.peerId = peerId;
-//        this.timestamp = timestamp;
-//        this.text = text;
-//    }
-//
-//    public PeerId getPeerId()
-//    {
-//        return this.peerId;
-//    }
-//
-//    public long getTimestamp()
-//    {
-//        return this.timestamp;
-//    }
-//
-//    public String getText()
-//    {
-//        return this.text;
-//    }
-//}
 
 /* -------------------------------------------------------------------------- */
