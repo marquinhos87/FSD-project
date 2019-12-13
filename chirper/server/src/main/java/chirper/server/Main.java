@@ -29,8 +29,8 @@ public class Main
 
             if (args.length != 1)
             {
-                err.println("Usage: chirper-server <config_file>");
-                err.flush();
+                out.println("Usage: chirper-server <config_file>");
+                out.flush();
                 System.exit(2);
             }
 
