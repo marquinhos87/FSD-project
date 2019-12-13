@@ -141,14 +141,14 @@ public class Peer implements AutoCloseable
      */
     private CompletableFuture< Void > publishChirp(String chirp)
     {
-        var future = new CompletableFuture< Void >();
+        var ackFuture = new CompletableFuture< Void >();
 
         // create pending chirp
 
         final var timestamp = this.clock++;
 
         this.pendingChirps.put(
-            timestamp, new PendingChirp(this.remotePeerIds.values(), future)
+            timestamp, new PendingChirp(this.remotePeerIds.values(), ackFuture)
         );
 
         // send chirp to peers
@@ -157,15 +157,15 @@ public class Peer implements AutoCloseable
             new MsgChirp(timestamp, chirp)
         );
 
-        for (final var peerAddress : this.remotePeerIds.keySet())
-        {
-            future = CompletableFuture.allOf(
-                future,
-                this.messaging.sendAsync(peerAddress, "chirp", payload)
-            );
-        }
+        final var sendFuture = CompletableFuture.allOf(
+            this.remotePeerIds
+                .keySet()
+                .stream()
+                .map(a -> this.messaging.sendAsync(a, "chirp", payload))
+                .toArray(CompletableFuture[]::new)
+        );
 
-        return future.thenRun(() -> {
+        return ackFuture.thenAcceptBoth(sendFuture, (v1, v2) -> {
             this.pendingChirps.remove(timestamp);
             this.state.addChirp(this.localPeerId, timestamp, chirp);
         });
@@ -203,11 +203,13 @@ public class Peer implements AutoCloseable
         final var fromId = this.remotePeerIds.get(from);
         final var msg = this.serializer.< MsgChirp >decode(payload);
 
+        // "synchronize" and tick clock
+
         this.clock = Math.max(this.clock, msg.timestamp) + 1;
 
-        this.publishedChirps.add(new PublishedChirp(
-            fromId, msg.timestamp, msg.text
-        ));
+        // add chirp to state
+
+        this.state.addChirp(fromId, msg.timestamp, msg.text);
     }
 
     private void handlePeerAck(Address from, byte[] payload)

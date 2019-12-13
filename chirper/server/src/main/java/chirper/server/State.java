@@ -13,44 +13,15 @@ import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /* -------------------------------------------------------------------------- */
 
+/**
+ * TODO: rename
+ * TODO: document
+ */
 public class State
 {
-    /**
-     * TODO: document
-     */
-    private static class Chirp
-    {
-        private final PeerId peerId;
-        private final long timestamp;
-        private final String text;
-
-        public Chirp(PeerId peerId, long timestamp, String text)
-        {
-            this.peerId = peerId;
-            this.timestamp = timestamp;
-            this.text = text;
-        }
-
-        public PeerId getPeerId()
-        {
-            return this.peerId;
-        }
-
-        public long getTimestamp()
-        {
-            return this.timestamp;
-        }
-
-        public String getText()
-        {
-            return this.text;
-        }
-    }
-
     // all chirps in reverse global total order
     private final SortedSet< Chirp > chirps;
 
@@ -86,6 +57,8 @@ public class State
         this.chirps.add(
             new Chirp(publishingPeerId, publisherChirpTimestamp, chirpText)
         );
+
+
     }
 
     /**
@@ -152,6 +125,35 @@ public class State
         // return chirps
 
         return Collections.unmodifiableList(latestChirps);
+    }
+
+    private static class Chirp
+    {
+        private final PeerId peerId;
+        private final long timestamp;
+        private final String text;
+
+        public Chirp(PeerId peerId, long timestamp, String text)
+        {
+            this.peerId = peerId;
+            this.timestamp = timestamp;
+            this.text = text;
+        }
+
+        public PeerId getPeerId()
+        {
+            return this.peerId;
+        }
+
+        public long getTimestamp()
+        {
+            return this.timestamp;
+        }
+
+        public String getText()
+        {
+            return this.text;
+        }
     }
 }
 
