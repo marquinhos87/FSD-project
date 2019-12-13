@@ -100,7 +100,7 @@ public class Server implements AutoCloseable
         final var e = Executors.newFixedThreadPool(1);
 
         this.messaging.registerHandler("get", this::handleClientGet, e);
-        this.messaging.registerHandler("publish", this::handleClientPublish, e);
+        this.messaging.registerHandler("publish", this::handleClientPublish);
 
         this.messaging.registerHandler("chirp", this::handleServerChirp, e);
         this.messaging.registerHandler("ack", this::handleServerAck, e);

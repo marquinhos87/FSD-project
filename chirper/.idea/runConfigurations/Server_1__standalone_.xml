@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Server (standalone)" type="Application" factoryName="Application">
+  <configuration default="false" name="Server 1 (standalone)" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="chirper.server.Main" />
     <module name="server" />
     <option name="PROGRAM_PARAMETERS" value="server-standalone.yaml" />

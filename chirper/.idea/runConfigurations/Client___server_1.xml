@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Client" type="Application" factoryName="Application">
+  <configuration default="false" name="Client - server 1" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="chirper.client.Main" />
     <module name="client" />
     <option name="PROGRAM_PARAMETERS" value="localhost:7001" />
