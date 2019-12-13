@@ -1,8 +1,8 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Server" type="Application" factoryName="Application">
+  <configuration default="false" name="Server 1" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="chirper.server.Main" />
     <module name="server" />
-    <option name="PROGRAM_PARAMETERS" value="peer-1.yaml" />
+    <option name="PROGRAM_PARAMETERS" value="server-1.yaml" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="chirper.client.*" />
