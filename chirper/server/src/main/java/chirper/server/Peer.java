@@ -165,7 +165,9 @@ public class Peer implements AutoCloseable
                 .toArray(CompletableFuture[]::new)
         );
 
-        return ackFuture.thenAcceptBoth(sendFuture, (v1, v2) -> {
+        // (when we sent all reqs and received all acks, ...)
+
+        return sendFuture.thenAcceptBoth(ackFuture, (v1, v2) -> {
             this.pendingChirps.remove(timestamp);
             this.state.addChirp(this.localPeerId, timestamp, chirp);
         });
