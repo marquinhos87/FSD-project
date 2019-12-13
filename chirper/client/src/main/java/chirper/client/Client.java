@@ -12,6 +12,7 @@ import io.atomix.utils.serializer.Serializer;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -101,6 +102,14 @@ public class Client implements AutoCloseable
     public void close()
     {
         this.messaging.stop().join();
+    }
+
+    /**
+     * TODO: document
+     */
+    public Set< String > getSubscribedTopics()
+    {
+        return Collections.unmodifiableSet(this.subscribedTopics);
     }
 
     /**

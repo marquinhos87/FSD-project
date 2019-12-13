@@ -155,7 +155,9 @@ public class Prompt
         {
             Util.printWarning(
                 this.out,
-                "No chirps exist for any of your subscribed topics."
+                this.client.getSubscribedTopics().isEmpty()
+                    ? "No chirps exist."
+                    : "No chirps exist for any of your subscribed topics."
             );
         }
         else

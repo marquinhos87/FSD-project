@@ -87,7 +87,7 @@ public class Server implements AutoCloseable
         this.serializer =
             Serializer
                 .builder()
-                .withTypes(MsgChirp.class, MsgAck.class)
+                .withTypes(MsgChirp.class, MsgAck.class, ServerId.class)
                 .build();
 
         this.clock = Long.MIN_VALUE;
@@ -156,7 +156,7 @@ public class Server implements AutoCloseable
         return
             this.publishChirp(chirp)
                 .thenApply(v -> null)
-                .exceptionally(v -> null)
+                .exceptionally(Throwable::getMessage)
                 .thenApply(this.serializer::encode);
     }
 
@@ -223,8 +223,8 @@ public class Server implements AutoCloseable
             this.remoteServerAddresses
                 .stream()
                 .map(
-                    a -> this.messaging.sendAsync(
-                        a, Config.SERVER_PUBLISH_MSG_NAME, payload
+                    address -> this.messaging.sendAsync(
+                        address, Config.SERVER_PUBLISH_MSG_NAME, payload
                     )
                 )
                 .toArray(CompletableFuture[]::new)
