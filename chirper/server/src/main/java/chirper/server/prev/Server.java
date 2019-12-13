@@ -2,7 +2,6 @@
 
 package chirper.server.prev;
 
-import chirper.shared.Msg;
 import chirper.shared.Util;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;

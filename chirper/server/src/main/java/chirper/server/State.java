@@ -5,6 +5,7 @@ package chirper.server;
 import chirper.shared.Config;
 import chirper.shared.Util;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -57,8 +58,6 @@ public class State
         this.chirps.add(
             new Chirp(publishingPeerId, publisherChirpTimestamp, chirpText)
         );
-
-
     }
 
     /**
@@ -115,8 +114,8 @@ public class State
 
         final var latestChirps =
             stream
-                .limit(Config.MAX_CHIRPS_PER_TOPIC)
-                .collect(Collectors.toList());
+                .limit(Config.CHIRPS_PER_GET)
+                .collect(Collectors.toCollection(ArrayList::new));
 
         // reverse chirps back to original order
 

@@ -17,7 +17,7 @@ public class Config
     /**
      * TODO: document
      */
-    public static final int MAX_CHIRPS_PER_TOPIC = 10;
+    public static final int CHIRPS_PER_GET = 10;
 
     private Config()
     {

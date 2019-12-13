@@ -2,6 +2,7 @@
   <configuration default="false" name="Client" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="chirper.client.Main" />
     <module name="client" />
+    <option name="PROGRAM_PARAMETERS" value="localhost:7001" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="chirper.client.*" />

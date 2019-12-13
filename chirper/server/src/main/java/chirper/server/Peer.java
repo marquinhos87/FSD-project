@@ -127,6 +127,63 @@ public class Peer implements AutoCloseable
         this.messaging.stop().join();
     }
 
+    private byte[] handleClientGet(Address from, byte[] payload)
+    {
+        final String[] topics = this.serializer.decode(payload);
+
+        // TODO: validate topics
+
+        final var chirps = this.state.getLatestChirps(topics);
+
+        return this.serializer.encode(chirps.toArray(String[]::new));
+    }
+
+    private CompletableFuture< byte[] > handleClientPublish(
+        Address from,
+        byte[] payload
+    )
+    {
+        final String chirp = this.serializer.decode(payload);
+
+        // TODO: validate chirp
+
+        return
+            this.publishChirp(chirp)
+                .thenApply(v -> "")
+                .exceptionally(Throwable::getMessage)
+                .thenApply(this.serializer::encode);
+    }
+
+    private void handlePeerChirp(Address from, byte[] payload)
+    {
+        final var fromId = this.remotePeerIds.get(from);
+        final var msg = this.serializer.< MsgChirp >decode(payload);
+
+        // "synchronize" and tick clock
+
+        this.clock = Math.max(this.clock, msg.timestamp) + 1;
+
+        // add chirp to state
+
+        this.state.addChirp(fromId, msg.timestamp, msg.text);
+
+        // send acknowledgment
+
+        this.messaging.sendAsync(
+            from,
+            "ack",
+            this.serializer.encode(new MsgAck(msg.timestamp))
+        );
+    }
+
+    private void handlePeerAck(Address from, byte[] payload)
+    {
+        final var fromId = this.remotePeerIds.get(from);
+        final var msg = this.serializer.< MsgAck >decode(payload);
+
+        this.pendingChirps.get(msg.chirpTimestamp).ackPeer(fromId);
+    }
+
     /**
      * Publishes the given chirp, which should have been received from a
      * client.
@@ -171,55 +228,6 @@ public class Peer implements AutoCloseable
             this.pendingChirps.remove(timestamp);
             this.state.addChirp(this.localPeerId, timestamp, chirp);
         });
-    }
-
-    private byte[] handleClientGet(Address from, byte[] payload)
-    {
-        final String[] topics = this.serializer.decode(payload);
-
-        // TODO: validate topics
-
-        final var chirps = this.state.getLatestChirps(topics);
-
-        return this.serializer.encode(chirps.toArray(String[]::new));
-    }
-
-    private CompletableFuture< byte[] > handleClientPublish(
-        Address from,
-        byte[] payload
-    )
-    {
-        final String chirp = this.serializer.decode(payload);
-
-        // TODO: validate chirp
-
-        return
-            this.publishChirp(chirp)
-                .thenApply(v -> "")
-                .exceptionally(Throwable::getMessage)
-                .thenApply(this.serializer::encode);
-    }
-
-    private void handlePeerChirp(Address from, byte[] payload)
-    {
-        final var fromId = this.remotePeerIds.get(from);
-        final var msg = this.serializer.< MsgChirp >decode(payload);
-
-        // "synchronize" and tick clock
-
-        this.clock = Math.max(this.clock, msg.timestamp) + 1;
-
-        // add chirp to state
-
-        this.state.addChirp(fromId, msg.timestamp, msg.text);
-    }
-
-    private void handlePeerAck(Address from, byte[] payload)
-    {
-        final var fromId = this.remotePeerIds.get(from);
-        final var msg = this.serializer.< MsgAck >decode(payload);
-
-        this.pendingChirps.get(msg.chirpTimestamp).ackPeer(fromId);
     }
 }
 

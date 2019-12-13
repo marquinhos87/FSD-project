@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.util.concurrent.ExecutionException;
 
 /* -------------------------------------------------------------------------- */
 
@@ -25,7 +26,7 @@ public class Main
      * @param args TODO: document
      * @throws IOException TODO: document
      */
-    public static void main(String[] args) throws IOException
+    public static void main(String[] args) throws IOException, ExecutionException, InterruptedException
     {
         try (
             final var in = new BufferedReader(new InputStreamReader(System.in));
@@ -33,8 +34,8 @@ public class Main
             final var err = new PrintWriter(new OutputStreamWriter(System.err))
         )
         {
-            try
-            {
+//            try
+//            {
                 // check usage and parse arguments
 
                 final var serverAddress = parseArgs(args);
@@ -53,12 +54,12 @@ public class Main
                     client.start();
                     new Prompt(client, in, out).inputLoop();
                 }
-            }
-            catch (Exception e)
-            {
-                Util.printError(err, e.getMessage());
-                System.exit(1);
-            }
+//            }
+//            catch (Exception e)
+//            {
+//                Util.printError(err, e.getMessage());
+//                System.exit(1);
+//            }
         }
     }
 
