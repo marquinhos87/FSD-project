@@ -70,8 +70,7 @@ public class Prompt
             {
                 // no more input, exit input loop
                 this.out.println();
-                this.out.println("Exiting...");
-                this.out.flush();
+                Util.printWarning(this.out, "Exiting...");
                 break;
             }
 

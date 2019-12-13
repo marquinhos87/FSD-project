@@ -1,7 +1,7 @@
 <component name="ArtifactManager">
-  <artifact type="jar" build-on-make="true" name="chirper-peer">
+  <artifact type="jar" build-on-make="true" name="chirper-server">
     <output-path>$PROJECT_DIR$/out/artifacts</output-path>
-    <root id="archive" name="chirper-peer.jar">
+    <root id="archive" name="chirper-server.jar">
       <element id="directory" name="META-INF">
         <element id="file-copy" path="$PROJECT_DIR$/server/src/META-INF/MANIFEST.MF" />
       </element>
@@ -35,6 +35,7 @@
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/io/github/classgraph/classgraph/4.2.3/classgraph-4.2.3.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/google/guava/guava/22.0/guava-22.0.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/io/atomix/atomix-storage/3.1.5/atomix-storage-3.1.5.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/slf4j/slf4j-nop/1.7.7/slf4j-nop-1.7.7.jar" path-in-jar="/" />
     </root>
   </artifact>
 </component>

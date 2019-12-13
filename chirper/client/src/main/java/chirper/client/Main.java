@@ -47,6 +47,11 @@ public class Main
                     System.exit(2);
                 }
 
+                // hack: suppress "illegal reflective access" warnings
+
+                System.err.close();
+                System.setErr(System.out);
+
                 // run client and input loop
 
                 try (final var client = new Client(serverAddress))

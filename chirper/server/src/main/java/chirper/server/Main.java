@@ -29,10 +29,15 @@ public class Main
 
                 if (args.length != 1)
                 {
-                    err.println("Usage: chirper-peer <config_file>");
+                    err.println("Usage: chirper-server <config_file>");
                     err.flush();
                     System.exit(2);
                 }
+
+                // hack: suppress "illegal reflective access" warnings
+
+                System.err.close();
+                System.setErr(System.out);
 
                 // parse peer config
 
