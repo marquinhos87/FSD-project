@@ -7,7 +7,6 @@ import chirper.shared.Util;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /* -------------------------------------------------------------------------- */
 
@@ -33,7 +32,7 @@ public class Main
 
                 // parse peer config
 
-                final var config = Config.parseYamlFile(Path.of(args[0]));
+                final var config = PeerConfig.parseYamlFile(Path.of(args[0]));
 
                 // run peer
 

@@ -17,14 +17,14 @@ import java.util.stream.Collectors;
 
 /* -------------------------------------------------------------------------- */
 
-public class Config
+public class PeerConfig
 {
     private final PeerId localPeerId;
     private final int localPeerPort;
 
     private final Map< Address, PeerId > remotePeerIds;
 
-    public Config(
+    public PeerConfig(
         PeerId localPeerId,
         int localPeerPort,
         Map< Address, PeerId > remotePeerIds
@@ -51,12 +51,12 @@ public class Config
         return Collections.unmodifiableMap(this.remotePeerIds);
     }
 
-    public static Config parseYamlFile(Path filePath) throws IOException
+    public static PeerConfig parseYamlFile(Path filePath) throws IOException
     {
         return parseYaml(Files.readString(filePath));
     }
 
-    public static Config parseYaml(String yaml)
+    public static PeerConfig parseYaml(String yaml)
     {
         // parse yaml
 
@@ -65,7 +65,7 @@ public class Config
 
         // convert to config
 
-        return new Config(
+        return new PeerConfig(
             new PeerId(root.localPeer.id),
             root.localPeer.port,
             root.remotePeers.stream().collect(Collectors.toMap(
