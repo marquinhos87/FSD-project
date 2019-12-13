@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 
 /* -------------------------------------------------------------------------- */
 
-public class Server
+public class PrevServer
 {
 
     private ManagedMessagingService ms;
@@ -33,7 +33,7 @@ public class Server
     private Map<Address, Client > clients;
     private Map<String,List< Msg >> chirps;
 
-    public Server(String args)
+    public PrevServer(String args)
     {
         File f = new File(args);
 
