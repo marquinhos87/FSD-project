@@ -2,6 +2,7 @@
 
 package chirper.client;
 
+import chirper.shared.Config;
 import chirper.shared.Util;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
@@ -75,7 +76,7 @@ public class Client implements AutoCloseable
         this.serverAddress = serverAddress;
 
         this.messaging = new NettyMessagingService(
-            "chirper",
+            Config.NETTY_CLUSTER_NAME,
             Address.local(),
             new MessagingConfig()
         );

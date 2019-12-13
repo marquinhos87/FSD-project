@@ -1,6 +1,6 @@
 /* -------------------------------------------------------------------------- */
 
-package chirper.server;
+package chirper.server.prev;
 
 import chirper.shared.Msg;
 import chirper.shared.Util;
@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 
 /* -------------------------------------------------------------------------- */
 
-public class PrevServer
+public class Server
 {
 
     private ManagedMessagingService ms;
@@ -33,7 +33,7 @@ public class PrevServer
     private Map<Address, Client > clients;
     private Map<String,List< Msg >> chirps;
 
-    public PrevServer(String args)
+    public Server(String args)
     {
         File f = new File(args);
 

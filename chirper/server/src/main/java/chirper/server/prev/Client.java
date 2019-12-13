@@ -1,6 +1,6 @@
 /* -------------------------------------------------------------------------- */
 
-package chirper.server;
+package chirper.server.prev;
 
 import io.atomix.utils.net.Address;
 

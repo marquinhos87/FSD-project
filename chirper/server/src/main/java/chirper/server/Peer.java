@@ -2,6 +2,7 @@
 
 package chirper.server;
 
+import chirper.shared.Config;
 import chirper.shared.Util;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.MessagingService;
@@ -66,7 +67,9 @@ public class Peer
         this.peerIds = new HashMap<>(peerIds);
 
         this.messaging = new NettyMessagingService(
-            "chirper", Address.from(localPeerPort), new MessagingConfig()
+            Config.NETTY_CLUSTER_NAME,
+            Address.from(localPeerPort),
+            new MessagingConfig()
         );
 
         this.serializer =
