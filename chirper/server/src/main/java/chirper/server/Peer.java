@@ -128,27 +128,6 @@ public class Peer implements AutoCloseable
     }
 
     /**
-     * Gets the most recent chirps with the given topics.
-     *
-     * Only up to {@param maxChirps} are returned in the list.
-     *
-     * The list is unmodifiable.
-     *
-     * Thread-safety: Safe to call at any time from any context.
-     *
-     * @param topics
-     * @param maxChirps
-     *
-     * @return
-     */
-    public List< PublishedChirp > getChirps(
-        Collection< ? extends CharSequence > topics,
-        long maxChirps
-    )
-    {
-    }
-
-    /**
      * Publishes the given chirp, which should have been received from a
      * client.
      *
@@ -160,7 +139,7 @@ public class Peer implements AutoCloseable
      *
      * @return a future that is completed when all peers acknowledge the chirp
      */
-    public CompletableFuture< Void > publishChirp(String chirp)
+    private CompletableFuture< Void > publishChirp(String chirp)
     {
         var future = new CompletableFuture< Void >();
 
@@ -188,10 +167,7 @@ public class Peer implements AutoCloseable
 
         return future.thenRun(() -> {
             this.pendingChirps.remove(timestamp);
-
-            this.publishedChirps.add(
-                new PublishedChirp(this.localPeerId, timestamp, chirp)
-            );
+            this.state.addChirp(this.localPeerId, timestamp, chirp);
         });
     }
 
@@ -206,13 +182,20 @@ public class Peer implements AutoCloseable
         return this.serializer.encode(chirps.toArray(String[]::new));
     }
 
-    private byte[] handleClientPublish(Address from, byte[] payload)
+    private CompletableFuture< byte[] > handleClientPublish(
+        Address from,
+        byte[] payload
+    )
     {
         final String chirp = this.serializer.decode(payload);
 
         // TODO: validate chirp
 
-
+        return
+            this.publishChirp(chirp)
+                .thenApply(v -> "")
+                .exceptionally(Throwable::getMessage)
+                .thenApply(this.serializer::encode);
     }
 
     private void handlePeerChirp(Address from, byte[] payload)
