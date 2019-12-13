@@ -33,8 +33,8 @@ public class Main
         {
             // hack: suppress "illegal reflective access" warnings
 
-            System.err.close();
-            System.setErr(System.out);
+//            System.err.close();
+//            System.setErr(System.out);
 
             // check usage and parse arguments
 

@@ -10,10 +10,13 @@ import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Serializer;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 /* -------------------------------------------------------------------------- */
 
@@ -25,8 +28,8 @@ public class Server implements AutoCloseable
     // the identifier of this server
     private final ServerId localServerId;
 
-    // the identifiers of all remote servers, keyed by their addresses
-    private final Map< Address, ServerId > remoteServerIds;
+    // the identifiers of all remote servers
+    private final Set< ServerId > remoteServerIds;
 
     // the messaging service
     private final ManagedMessagingService messaging;
@@ -42,6 +45,11 @@ public class Server implements AutoCloseable
 
     // TODO: document
     private final State state;
+
+    private Address canonicalizeAddress(Address a)
+    {
+        return new Address(a.address(true).toString(), a.port());
+    }
 
     /**
      * TODO: document
@@ -72,7 +80,12 @@ public class Server implements AutoCloseable
     )
     {
         this.localServerId = Objects.requireNonNull(localServerId);
-        this.remoteServerIds = new HashMap<>(remoteServerIds);
+
+        this.remoteServerIds =
+            remoteServerIds
+                .values()
+                .stream()
+                .collect(Collectors.toUnmodifiableSet());
 
         this.messaging = new NettyMessagingService(
             Config.NETTY_CLUSTER_NAME,
@@ -89,18 +102,17 @@ public class Server implements AutoCloseable
         this.clock = Long.MIN_VALUE;
 
         this.pendingChirps = new HashMap<>();
-
         this.state = new State();
 
         // register message handlers
 
-        final var e = Executors.newFixedThreadPool(1);
+        final var exec = Executors.newFixedThreadPool(1);
 
-        this.messaging.registerHandler("get", this::handleClientGet, e);
+        this.messaging.registerHandler("get", this::handleClientGet, exec);
         this.messaging.registerHandler("publish", this::handleClientPublish);
 
-        this.messaging.registerHandler("chirp", this::handleServerChirp, e);
-        this.messaging.registerHandler("ack", this::handleServerAck, e);
+        this.messaging.registerHandler("chirp", this::handleServerChirp, exec);
+        this.messaging.registerHandler("ack", this::handleServerAck, exec);
     }
 
     /**
@@ -149,7 +161,6 @@ public class Server implements AutoCloseable
 
     private void handleServerChirp(Address from, byte[] payload)
     {
-        final var fromId = this.remoteServerIds.get(from);
         final var msg = this.serializer.< MsgChirp >decode(payload);
 
         // "synchronize" and tick clock
@@ -158,23 +169,22 @@ public class Server implements AutoCloseable
 
         // add chirp to state
 
-        this.state.addChirp(fromId, msg.timestamp, msg.text);
+        this.state.addChirp(msg.serverId, msg.timestamp, msg.text);
 
         // send acknowledgment
 
         this.messaging.sendAsync(
             from,
             "ack",
-            this.serializer.encode(new MsgAck(msg.timestamp))
+            this.serializer.encode(new MsgAck(this.localServerId, msg.timestamp))
         );
     }
 
     private void handleServerAck(Address from, byte[] payload)
     {
-        final var fromId = this.remoteServerIds.get(from);
         final var msg = this.serializer.< MsgAck >decode(payload);
 
-        this.pendingChirps.get(msg.chirpTimestamp).ackServer(fromId);
+        this.pendingChirps.get(msg.chirpTimestamp).ackServer(msg.serverId);
     }
 
     /**
@@ -199,13 +209,13 @@ public class Server implements AutoCloseable
 
         this.pendingChirps.put(
             timestamp,
-            new PendingChirp(this.remoteServerIds.values(), ackFuture)
+            new PendingChirp(this.remoteServerIds, ackFuture)
         );
 
         // send chirp to servers
 
         final var payload = this.serializer.encode(
-            new MsgChirp(timestamp, chirp)
+            new MsgChirp(this.localServerId, timestamp, chirp)
         );
 
         final var sendFuture = CompletableFuture.allOf(

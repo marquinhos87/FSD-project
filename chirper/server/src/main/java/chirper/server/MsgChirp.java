@@ -11,6 +11,7 @@ import java.util.Objects;
  */
 public class MsgChirp
 {
+    public ServerId serverId;
     public long timestamp;
     public String text;
 
@@ -20,8 +21,9 @@ public class MsgChirp
      * @param timestamp TODO: document
      * @param text TODO: document
      */
-    public MsgChirp(long timestamp, String text)
+    public MsgChirp(ServerId serverId, long timestamp, String text)
     {
+        this.serverId = Objects.requireNonNull(serverId);
         this.timestamp = timestamp;
         this.text = Objects.requireNonNull(text);
     }

@@ -4,11 +4,14 @@ package chirper.server;
 
 /* -------------------------------------------------------------------------- */
 
+import java.util.Objects;
+
 /**
  * TODO: document
  */
 public class MsgAck
 {
+    public ServerId serverId;
     public long chirpTimestamp;
 
     /**
@@ -16,8 +19,9 @@ public class MsgAck
      *
      * @param chirpTimestamp TODO: document
      */
-    public MsgAck(long chirpTimestamp)
+    public MsgAck(ServerId serverId, long chirpTimestamp)
     {
+        this.serverId = Objects.requireNonNull(serverId);
         this.chirpTimestamp = chirpTimestamp;
     }
 }
