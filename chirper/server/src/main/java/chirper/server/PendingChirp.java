@@ -2,7 +2,6 @@
 
 package chirper.server;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -15,7 +14,9 @@ import java.util.concurrent.CompletableFuture;
  */
 public class PendingChirp
 {
-    private final Set< ServerId > unackedServerIds;
+    private final int numRemoteServers;
+    private final Set< ServerId > ackedServerIds;
+
     private final CompletableFuture< Void > onAllAcked;
 
     /**
@@ -25,14 +26,16 @@ public class PendingChirp
      * @param onAllAcked TODO: document
      */
     public PendingChirp(
-        Collection< ServerId > serverIds,
+        int numRemoteServers,
         CompletableFuture< Void > onAllAcked
     )
     {
-        this.unackedServerIds = new HashSet<>(serverIds);
+        this.numRemoteServers = numRemoteServers;
+        this.ackedServerIds = new HashSet<>();
+
         this.onAllAcked = Objects.requireNonNull(onAllAcked);
 
-        checkEmpty();
+        checkAllAcked();
     }
 
     /**
@@ -42,17 +45,17 @@ public class PendingChirp
      */
     public void ackServer(ServerId serverId)
     {
-        this.unackedServerIds.remove(serverId);
+        this.ackedServerIds.add(serverId);
 
-        checkEmpty();
+        checkAllAcked();
     }
 
     /**
      * TODO: document
      */
-    private void checkEmpty()
+    private void checkAllAcked()
     {
-        if (this.unackedServerIds.isEmpty())
+        if (this.ackedServerIds.size() == this.numRemoteServers)
             this.onAllAcked.complete(null);
     }
 }

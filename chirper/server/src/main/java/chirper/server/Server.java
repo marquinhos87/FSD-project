@@ -8,7 +8,9 @@ import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Serializer;
+import org.apache.commons.math3.analysis.function.Add;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -27,9 +29,6 @@ public class Server implements AutoCloseable
 {
     // the identifier of this server
     private final ServerId localServerId;
-
-    // the identifiers of all remote servers
-    private final Set< ServerId > remoteServerIds;
 
     // the addresses of all remote servers
     private final Set< Address > remoteServerAddresses;
@@ -74,22 +73,12 @@ public class Server implements AutoCloseable
     public Server(
         ServerId localServerId,
         int localServerPort,
-        Map< Address, ServerId > remoteServerIds
+        Collection< Address > remoteServerAddresses
     )
     {
         this.localServerId = Objects.requireNonNull(localServerId);
 
-        this.remoteServerIds =
-            remoteServerIds
-                .values()
-                .stream()
-                .collect(Collectors.toUnmodifiableSet());
-
-        this.remoteServerAddresses =
-            remoteServerIds
-                .keySet()
-                .stream()
-                .collect(Collectors.toUnmodifiableSet());
+        this.remoteServerAddresses = new HashSet<>(remoteServerAddresses);
 
         this.messaging = new NettyMessagingService(
             Config.NETTY_CLUSTER_NAME,
@@ -213,7 +202,7 @@ public class Server implements AutoCloseable
 
         this.pendingChirps.put(
             timestamp,
-            new PendingChirp(this.remoteServerIds, ackFuture)
+            new PendingChirp(this.remoteServerAddresses.size(), ackFuture)
         );
 
         // send chirp to servers
