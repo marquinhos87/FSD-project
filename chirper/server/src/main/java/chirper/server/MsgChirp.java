@@ -2,6 +2,8 @@
 
 package chirper.server;
 
+import java.util.Objects;
+
 /* -------------------------------------------------------------------------- */
 
 /**
@@ -21,7 +23,7 @@ public class MsgChirp
     public MsgChirp(long timestamp, String text)
     {
         this.timestamp = timestamp;
-        this.text = text;
+        this.text = Objects.requireNonNull(text);
     }
 }
 

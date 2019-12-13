@@ -4,6 +4,7 @@ package chirper.server;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
@@ -29,7 +30,7 @@ public class PendingChirp
     )
     {
         this.unackedServerIds = new HashSet<>(serverIds);
-        this.onAllAcked = onAllAcked;
+        this.onAllAcked = Objects.requireNonNull(onAllAcked);
 
         checkEmpty();
     }

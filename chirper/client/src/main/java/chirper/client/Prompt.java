@@ -8,6 +8,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -40,10 +41,10 @@ public class Prompt
      */
     public Prompt(Client client, BufferedReader in, PrintWriter out)
     {
-        this.client = client;
+        this.client = Objects.requireNonNull(client);
 
-        this.in = in;
-        this.out = out;
+        this.in = Objects.requireNonNull(in);
+        this.out = Objects.requireNonNull(out);
     }
 
     /**

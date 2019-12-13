@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
@@ -72,7 +73,7 @@ public class Client implements AutoCloseable
      */
     public Client(Address serverAddress)
     {
-        this.serverAddress = serverAddress;
+        this.serverAddress = Objects.requireNonNull(serverAddress);
 
         this.messaging = new NettyMessagingService(
             Config.NETTY_CLUSTER_NAME,
