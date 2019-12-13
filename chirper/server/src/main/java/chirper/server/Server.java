@@ -176,7 +176,7 @@ public class Server implements AutoCloseable
 
         this.messaging.sendAsync(
             from,
-            "ack",
+            Config.SERVER_ACK_PUBLICATION_MSG_NAME,
             this.serializer.encode(new MsgAck(this.localServerId, msg.timestamp))
         );
     }
@@ -222,7 +222,11 @@ public class Server implements AutoCloseable
         final var sendFuture = CompletableFuture.allOf(
             this.remoteServerAddresses
                 .stream()
-                .map(a -> this.messaging.sendAsync(a, "chirp", payload))
+                .map(
+                    a -> this.messaging.sendAsync(
+                        a, Config.SERVER_PUBLISH_MSG_NAME, payload
+                    )
+                )
                 .toArray(CompletableFuture[]::new)
         );
 
