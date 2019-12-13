@@ -2,8 +2,6 @@
 
 package chirper.server;
 
-import chirper.shared.Util;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -39,15 +37,15 @@ public class Main
                 System.err.close();
                 System.setErr(System.out);
 
-                // parse peer config
+                // parse server config
 
-                final var config = PeerConfig.parseYamlFile(Path.of(args[0]));
+                final var config = ServerConfig.parseYamlFile(Path.of(args[0]));
 
-                // run peer
+                // run server
 
-                try (final var peer = new Peer(config))
+                try (final var server = new Server(config))
                 {
-                    peer.start();
+                    server.start();
                     in.readLine();
                 }
 //            }

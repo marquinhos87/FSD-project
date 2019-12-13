@@ -33,7 +33,7 @@ public class State
     {
         this.chirps = new TreeSet<>(
             Comparator
-                .comparing(Chirp::getPeerId)
+                .comparing(Chirp::getServerId)
                 .thenComparingLong(Chirp::getTimestamp)
                 .reversed()
         );
@@ -44,19 +44,19 @@ public class State
      *
      * Thread-safety: Safe to call at any time from any context.
      *
-     * @param publishingPeerId the identifier of the publishing peer
+     * @param publishingServerId the identifier of the publishing peer
      * @param publisherChirpTimestamp the timestamp of the chirp, according
      *     to the publishing peer
      * @param chirpText the context of the chirp
      */
     public void addChirp(
-        PeerId publishingPeerId,
+        ServerId publishingServerId,
         long publisherChirpTimestamp,
         String chirpText
     )
     {
         this.chirps.add(
-            new Chirp(publishingPeerId, publisherChirpTimestamp, chirpText)
+            new Chirp(publishingServerId, publisherChirpTimestamp, chirpText)
         );
     }
 
@@ -128,20 +128,20 @@ public class State
 
     private static class Chirp
     {
-        private final PeerId peerId;
+        private final ServerId serverId;
         private final long timestamp;
         private final String text;
 
-        public Chirp(PeerId peerId, long timestamp, String text)
+        public Chirp(ServerId serverId, long timestamp, String text)
         {
-            this.peerId = peerId;
+            this.serverId = serverId;
             this.timestamp = timestamp;
             this.text = text;
         }
 
-        public PeerId getPeerId()
+        public ServerId getServerId()
         {
-            return this.peerId;
+            return this.serverId;
         }
 
         public long getTimestamp()

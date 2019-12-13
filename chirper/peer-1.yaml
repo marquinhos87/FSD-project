@@ -1,5 +1,5 @@
 
-localPeer: { id: 1, port: 7001 }
+localServer: { id: 1, port: 7001 }
 
-remotePeers: []
+remoteServers: []
     # - { id: 2, host: localhost, port: 7002 }

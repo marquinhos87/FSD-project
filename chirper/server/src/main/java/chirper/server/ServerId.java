@@ -9,11 +9,11 @@ package chirper.server;
  *
  * Instances of this class are immutable.
  */
-public class PeerId implements Comparable< PeerId >
+public class ServerId implements Comparable< ServerId >
 {
     private final int value;
 
-    public PeerId(int value)
+    public ServerId(int value)
     {
         this.value = value;
     }
@@ -24,7 +24,7 @@ public class PeerId implements Comparable< PeerId >
     }
 
     @Override
-    public int compareTo(PeerId other)
+    public int compareTo(ServerId other)
     {
         return Integer.compare(this.getValue(), other.getValue());
     }

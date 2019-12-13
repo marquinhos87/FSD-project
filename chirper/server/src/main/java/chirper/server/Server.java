@@ -3,7 +3,6 @@
 package chirper.server;
 
 import chirper.shared.Config;
-import chirper.shared.Util;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
@@ -11,29 +10,26 @@ import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Serializer;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
 /* -------------------------------------------------------------------------- */
 
 /**
  * TODO: document
  */
-public class Peer implements AutoCloseable
+public class Server implements AutoCloseable
 {
-    // the identifier of this peer
-    private final PeerId localPeerId;
+    // the identifier of this server
+    private final ServerId localServerId;
 
-    // the identifiers of all remote peers, keyed by their addresses
-    private final Map< Address, PeerId > remotePeerIds;
+    // the identifiers of all remote servers, keyed by their addresses
+    private final Map< Address, ServerId > remoteServerIds;
 
     // the messaging service
     private final ManagedMessagingService messaging;
@@ -41,10 +37,10 @@ public class Peer implements AutoCloseable
     // the message encoder and decoder
     private final Serializer serializer;
 
-    // the timestamp of the next chirp published by this peer
+    // the timestamp of the next chirp published by this server
     private long clock;
 
-    // all chirps being published by this peer, keyed by their timestamps
+    // all chirps being published by this server, keyed by their timestamps
     private final Map< Long, PendingChirp > pendingChirps;
 
     // TODO: document
@@ -55,35 +51,35 @@ public class Peer implements AutoCloseable
      *
      * @param config TODO: document
      */
-    public Peer(PeerConfig config)
+    public Server(ServerConfig config)
     {
         this(
-            config.getLocalPeerId(),
-            config.getLocalPeerPort(),
-            config.getRemotePeerIds()
+            config.getLocalServerId(),
+            config.getLocalServerPort(),
+            config.getRemoteServerIds()
         );
     }
 
     /**
      * TODO: document
      *
-     * @param localPeerId the identifier of this peer
-     * @param localPeerPort the port to be used by this peer
-     * @param remotePeerIds all remote peer identifiers keyed by their
+     * @param localServerId the identifier of this server
+     * @param localServerPort the port to be used by this server
+     * @param remoteServerIds all remote server identifiers keyed by their
      *     addresses
      */
-    public Peer(
-        PeerId localPeerId,
-        int localPeerPort,
-        Map< Address, PeerId > remotePeerIds
+    public Server(
+        ServerId localServerId,
+        int localServerPort,
+        Map< Address, ServerId > remoteServerIds
     )
     {
-        this.localPeerId = Objects.requireNonNull(localPeerId);
-        this.remotePeerIds = new HashMap<>(remotePeerIds);
+        this.localServerId = Objects.requireNonNull(localServerId);
+        this.remoteServerIds = new HashMap<>(remoteServerIds);
 
         this.messaging = new NettyMessagingService(
             Config.NETTY_CLUSTER_NAME,
-            Address.from(localPeerPort),
+            Address.from(localServerPort),
             new MessagingConfig()
         );
 
@@ -106,8 +102,8 @@ public class Peer implements AutoCloseable
         this.messaging.registerHandler("get", this::handleClientGet, e);
         this.messaging.registerHandler("publish", this::handleClientPublish, e);
 
-        this.messaging.registerHandler("chirp", this::handlePeerChirp, e);
-        this.messaging.registerHandler("ack", this::handlePeerAck, e);
+        this.messaging.registerHandler("chirp", this::handleServerChirp, e);
+        this.messaging.registerHandler("ack", this::handleServerAck, e);
     }
 
     /**
@@ -149,14 +145,14 @@ public class Peer implements AutoCloseable
 
         return
             this.publishChirp(chirp)
-                .thenApply(v -> "")
+                .thenApply(v -> null)
                 .exceptionally(Throwable::getMessage)
                 .thenApply(this.serializer::encode);
     }
 
-    private void handlePeerChirp(Address from, byte[] payload)
+    private void handleServerChirp(Address from, byte[] payload)
     {
-        final var fromId = this.remotePeerIds.get(from);
+        final var fromId = this.remoteServerIds.get(from);
         final var msg = this.serializer.< MsgChirp >decode(payload);
 
         // "synchronize" and tick clock
@@ -176,25 +172,25 @@ public class Peer implements AutoCloseable
         );
     }
 
-    private void handlePeerAck(Address from, byte[] payload)
+    private void handleServerAck(Address from, byte[] payload)
     {
-        final var fromId = this.remotePeerIds.get(from);
+        final var fromId = this.remoteServerIds.get(from);
         final var msg = this.serializer.< MsgAck >decode(payload);
 
-        this.pendingChirps.get(msg.chirpTimestamp).ackPeer(fromId);
+        this.pendingChirps.get(msg.chirpTimestamp).ackServer(fromId);
     }
 
     /**
      * Publishes the given chirp, which should have been received from a
      * client.
      *
-     * The returned future is completed when all peers have acknowledged the
+     * The returned future is completed when all servers have acknowledged the
      * chirp. This implies that, by the time the future is completed, all chirps
      * ordered before the chirp in question were received.
      *
      * @param chirp the chirp to be published
      *
-     * @return a future that is completed when all peers acknowledge the chirp
+     * @return a future that is completed when all servers acknowledge the chirp
      */
     private CompletableFuture< Void > publishChirp(String chirp)
     {
@@ -205,17 +201,17 @@ public class Peer implements AutoCloseable
         final var timestamp = this.clock++;
 
         this.pendingChirps.put(
-            timestamp, new PendingChirp(this.remotePeerIds.values(), ackFuture)
+            timestamp, new PendingChirp(this.remoteServerIds.values(), ackFuture)
         );
 
-        // send chirp to peers
+        // send chirp to servers
 
         final var payload = this.serializer.encode(
             new MsgChirp(timestamp, chirp)
         );
 
         final var sendFuture = CompletableFuture.allOf(
-            this.remotePeerIds
+            this.remoteServerIds
                 .keySet()
                 .stream()
                 .map(a -> this.messaging.sendAsync(a, "chirp", payload))
@@ -226,7 +222,7 @@ public class Peer implements AutoCloseable
 
         return sendFuture.thenAcceptBoth(ackFuture, (v1, v2) -> {
             this.pendingChirps.remove(timestamp);
-            this.state.addChirp(this.localPeerId, timestamp, chirp);
+            this.state.addChirp(this.localServerId, timestamp, chirp);
         });
     }
 }
@@ -257,23 +253,23 @@ class MsgAck
 
 class PendingChirp
 {
-    private final Set< PeerId > unackedPeerIds;
+    private final Set< ServerId > unackedServerIds;
     private final CompletableFuture< Void > onAllAcked;
 
     public PendingChirp(
-        Collection< PeerId > peerIds,
+        Collection< ServerId > serverIds,
         CompletableFuture< Void > onAllAcked
     )
     {
-        this.unackedPeerIds = new HashSet<>(peerIds);
+        this.unackedServerIds = new HashSet<>(serverIds);
         this.onAllAcked = onAllAcked;
     }
 
-    public void ackPeer(PeerId peerId)
+    public void ackServer(ServerId serverId)
     {
-        this.unackedPeerIds.remove(peerId);
+        this.unackedServerIds.remove(serverId);
 
-        if (this.unackedPeerIds.isEmpty())
+        if (this.unackedServerIds.isEmpty())
             this.onAllAcked.complete(null);
     }
 }
