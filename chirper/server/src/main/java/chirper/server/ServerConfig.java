@@ -9,10 +9,10 @@ import org.yaml.snakeyaml.constructor.Constructor;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -23,18 +23,18 @@ public class ServerConfig
     private final ServerId localServerId;
     private final int localServerPort;
 
-    private final Map< Address, ServerId > remoteServerIds;
+    private final List< Address > remoteServerAddresses;
 
     public ServerConfig(
         ServerId localServerId,
         int localServerPort,
-        Map< Address, ServerId > remoteServerIds
+        Collection< Address > remoteServerAddresses
     )
     {
         this.localServerId = Objects.requireNonNull(localServerId);
         this.localServerPort = localServerPort;
 
-        this.remoteServerIds = new HashMap<>(remoteServerIds);
+        this.remoteServerAddresses = new ArrayList<>(remoteServerAddresses);
     }
 
     public ServerId getLocalServerId()
@@ -47,9 +47,9 @@ public class ServerConfig
         return this.localServerPort;
     }
 
-    public Map< Address, ServerId > getRemoteServerIds()
+    public List< Address > getRemoteServerAddresses()
     {
-        return Collections.unmodifiableMap(this.remoteServerIds);
+        return Collections.unmodifiableList(this.remoteServerAddresses);
     }
 
     public static ServerConfig parseYamlFile(Path filePath) throws IOException
@@ -69,10 +69,10 @@ public class ServerConfig
         return new ServerConfig(
             new ServerId(root.localServer.id),
             root.localServer.port,
-            root.remoteServers.stream().collect(Collectors.toMap(
-                p -> new Address(p.host, p.port),
-                p -> new ServerId(p.id)
-            ))
+            root.remoteServers
+                .stream()
+                .map(s -> new Address(s.host, s.port))
+                .collect(Collectors.toList())
         );
     }
 
@@ -90,7 +90,6 @@ public class ServerConfig
 
     private static class YamlRemoteServer
     {
-        public int id;
         public String host;
         public int port;
     }

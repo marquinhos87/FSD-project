@@ -19,6 +19,34 @@ public class Config
      */
     public static final int CHIRPS_PER_GET = 3;
 
+    /**
+     * TODO: document
+     *
+     * Sent from client to server and vice-versa.
+     */
+    public static final String CLIENT_GET_MSG_NAME = "c-get";
+
+    /**
+     * TODO: document
+     *
+     * Sent from client to server and vice-versa.
+     */
+    public static final String CLIENT_PUBLISH_MSG_NAME = "c-publish";
+
+    /**
+     * TODO: document
+     *
+     * Sent from server to server.
+     */
+    public static final String SERVER_PUBLISH_MSG_NAME = "s-publish";
+
+    /**
+     * TODO: document
+     *
+     * Sent from server to server.
+     */
+    public static final String SERVER_ACK_PUBLICATION_MSG_NAME = "s-ack";
+
     private Config()
     {
     }

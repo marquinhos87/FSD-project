@@ -2,4 +2,4 @@
 localServer: { id: 2, port: 7002 }
 
 remoteServers:
-    - { id: 1, host: localhost, port: 7001 }
+    - { host: localhost, port: 7001 }

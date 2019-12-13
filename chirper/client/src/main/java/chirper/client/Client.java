@@ -138,7 +138,7 @@ public class Client implements AutoCloseable
         // send get request and await reply
 
         final String[] chirps = this.sendAndReceive(
-            "get",
+            Config.CLIENT_GET_MSG_NAME,
             this.subscribedTopics.toArray(String[]::new)
         );
 
@@ -174,7 +174,10 @@ public class Client implements AutoCloseable
 
         // send publish request and await reply
 
-        final String error = this.sendAndReceive("publish", chirp.toString());
+        final String error = this.sendAndReceive(
+            Config.CLIENT_PUBLISH_MSG_NAME,
+            chirp.toString()
+        );
 
         // check if the server replied with an error
 

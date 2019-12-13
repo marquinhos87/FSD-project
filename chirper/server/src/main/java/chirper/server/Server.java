@@ -8,7 +8,6 @@ import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Serializer;
-import org.apache.commons.math3.analysis.function.Add;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -18,7 +17,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
 /* -------------------------------------------------------------------------- */
 
@@ -58,7 +56,7 @@ public class Server implements AutoCloseable
         this(
             config.getLocalServerId(),
             config.getLocalServerPort(),
-            config.getRemoteServerIds()
+            config.getRemoteServerAddresses()
         );
     }
 
@@ -67,7 +65,7 @@ public class Server implements AutoCloseable
      *
      * @param localServerId the identifier of this server
      * @param localServerPort the port to be used by this server
-     * @param remoteServerIds all remote server identifiers keyed by their
+     * @param remoteServerAddresses all remote server identifiers keyed by their
      *     addresses
      */
     public Server(
@@ -101,11 +99,21 @@ public class Server implements AutoCloseable
 
         final var exec = Executors.newFixedThreadPool(1);
 
-        this.messaging.registerHandler("get", this::handleClientGet, exec);
-        this.messaging.registerHandler("publish", this::handleClientPublish);
+        this.messaging.registerHandler(
+            Config.CLIENT_GET_MSG_NAME, this::handleClientGet, exec
+        );
 
-        this.messaging.registerHandler("chirp", this::handleServerChirp, exec);
-        this.messaging.registerHandler("ack", this::handleServerAck, exec);
+        this.messaging.registerHandler(
+            Config.CLIENT_PUBLISH_MSG_NAME, this::handleClientPublish
+        );
+
+        this.messaging.registerHandler(
+            Config.SERVER_PUBLISH_MSG_NAME, this::handleServerPublish, exec
+        );
+
+        this.messaging.registerHandler(
+            Config.SERVER_ACK_PUBLICATION_MSG_NAME, this::handleServerAck, exec
+        );
     }
 
     /**
@@ -152,7 +160,7 @@ public class Server implements AutoCloseable
                 .thenApply(this.serializer::encode);
     }
 
-    private void handleServerChirp(Address from, byte[] payload)
+    private void handleServerPublish(Address from, byte[] payload)
     {
         final var msg = this.serializer.< MsgChirp >decode(payload);
 
