@@ -31,6 +31,9 @@ public class Server implements AutoCloseable
     // the identifiers of all remote servers
     private final Set< ServerId > remoteServerIds;
 
+    // the addresses of all remote servers
+    private final Set< Address > remoteServerAddresses;
+
     // the messaging service
     private final ManagedMessagingService messaging;
 
@@ -45,11 +48,6 @@ public class Server implements AutoCloseable
 
     // TODO: document
     private final State state;
-
-    private Address canonicalizeAddress(Address a)
-    {
-        return new Address(a.address(true).toString(), a.port());
-    }
 
     /**
      * TODO: document
@@ -84,6 +82,12 @@ public class Server implements AutoCloseable
         this.remoteServerIds =
             remoteServerIds
                 .values()
+                .stream()
+                .collect(Collectors.toUnmodifiableSet());
+
+        this.remoteServerAddresses =
+            remoteServerIds
+                .keySet()
                 .stream()
                 .collect(Collectors.toUnmodifiableSet());
 
@@ -155,7 +159,7 @@ public class Server implements AutoCloseable
         return
             this.publishChirp(chirp)
                 .thenApply(v -> null)
-                .exceptionally(Throwable::getMessage)
+                .exceptionally(v -> null)
                 .thenApply(this.serializer::encode);
     }
 
@@ -219,8 +223,7 @@ public class Server implements AutoCloseable
         );
 
         final var sendFuture = CompletableFuture.allOf(
-            this.remoteServerIds
-                .keySet()
+            this.remoteServerAddresses
                 .stream()
                 .map(a -> this.messaging.sendAsync(a, "chirp", payload))
                 .toArray(CompletableFuture[]::new)
