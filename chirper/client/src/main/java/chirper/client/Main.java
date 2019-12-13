@@ -2,7 +2,6 @@
 
 package chirper.client;
 
-import chirper.shared.Util;
 import io.atomix.utils.net.Address;
 import io.atomix.utils.net.MalformedAddressException;
 
@@ -11,7 +10,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.util.concurrent.ExecutionException;
 
 /* -------------------------------------------------------------------------- */
 
@@ -26,7 +24,7 @@ public class Main
      * @param args TODO: document
      * @throws IOException TODO: document
      */
-    public static void main(String[] args) throws IOException, ExecutionException, InterruptedException
+    public static void main(String[] args) throws IOException
     {
         try (
             final var in = new BufferedReader(new InputStreamReader(System.in));

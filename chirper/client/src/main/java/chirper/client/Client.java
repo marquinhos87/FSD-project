@@ -84,20 +84,6 @@ public class Client implements AutoCloseable
         this.serializer = Serializer.builder().build();
 
         this.subscribedTopics = new HashSet<>();
-
-//        final var executor = Executors.newFixedThreadPool(1);
-//
-//        this.messaging.registerHandler("publish-ack",
-//        this::handlePublishAck, executor);
-//
-//        this.address_server = new Address(socketAddress.getHostName(),
-//        socketAddress.getPort());
-//
-//        this.ms = new NettyMessagingService(
-//                "servidor", new Address(socketAddress.getHostName(), 12345),
-//                new MessagingConfig());
-//
-//        this.s = new SerializerBuilder().addType(Msg.class).build();
     }
 
     /**
@@ -132,16 +118,6 @@ public class Client implements AutoCloseable
      *
      * @param topics TODO: document
      */
-    public void setSubscribedTopics(CharSequence[] topics)
-    {
-        this.setSubscribedTopics(Arrays.asList(topics));
-    }
-
-    /**
-     * TODO: document
-     *
-     * @param topics TODO: document
-     */
     public void setSubscribedTopics(Collection< ? extends CharSequence > topics)
     {
         // validate topics
@@ -156,15 +132,6 @@ public class Client implements AutoCloseable
 
         this.subscribedTopics.clear();
         this.subscribedTopics.addAll(newTopics);
-
-//        this.subscribedTopics.clear();
-//        this.subscribedTopics.addAll(newTopics);
-//
-//        StringBuilder sb = new StringBuilder();
-//        sb.append("!sub ");
-//        for(final var aux: this.subscribedTopics)
-//            sb.append(aux).append(" ");
-//        sendMsgAsync(sb.toString());
     }
 
     /**
