@@ -5,14 +5,12 @@ package chirper.client;
 import chirper.shared.Util;
 import io.atomix.utils.net.Address;
 import io.atomix.utils.net.MalformedAddressException;
-import io.atomix.utils.serializer.Serializer;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.util.List;
 
 /* -------------------------------------------------------------------------- */
 

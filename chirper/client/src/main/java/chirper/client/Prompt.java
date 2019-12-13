@@ -18,12 +18,16 @@ import java.util.regex.Pattern;
 public class Prompt
 {
     private static final Pattern COMMAND_PATTERN = Pattern.compile(
-        "^\\s*!\\s*(?<command>\\w*)(?:\\s+(?<args>.*))?"
+        "^\\s*!\\s*(?<command>\\w*)\\s+(?<args>.*)"
     );
 
+    // TODO: document
     private final Client client;
 
+    // TODO: document
     private final BufferedReader in;
+
+    // TODO: document
     private final PrintWriter out;
 
     /**
@@ -88,7 +92,7 @@ public class Prompt
             {
                 case "get":
 
-                    if (args != null)
+                    if (!args.isBlank())
                     {
                         Util.printError(
                             this.out,
@@ -105,26 +109,7 @@ public class Prompt
                 case "sub":
                 case "subscribe":
 
-                    if (args == null)
-                    {
-                        Util.printError(
-                            this.out,
-                            "Must specify one or more topics."
-                        );
-                    }
-                    else
-                    {
-                        this.handleSubscribe(args);
-                    }
-
-                    break;
-
-                case "":
-
-                    Util.printError(
-                        this.out,
-                        "Empty command, must be 'get', 'sub', or 'subscribe'."
-                    );
+                    this.handleSubscribe(args);
 
                     break;
 
