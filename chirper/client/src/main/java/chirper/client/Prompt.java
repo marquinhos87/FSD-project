@@ -12,6 +12,9 @@ import java.util.regex.Pattern;
 
 /* -------------------------------------------------------------------------- */
 
+/**
+ * TODO: document
+ */
 public class Prompt
 {
     private static final Pattern COMMAND_PATTERN = Pattern.compile(
@@ -23,6 +26,13 @@ public class Prompt
     private final BufferedReader in;
     private final PrintWriter out;
 
+    /**
+     * TODO: document
+     *
+     * @param client TODO: document
+     * @param in TODO: document
+     * @param out TODO: document
+     */
     public Prompt(Client client, BufferedReader in, PrintWriter out)
     {
         this.client = client;
@@ -31,6 +41,13 @@ public class Prompt
         this.out = out;
     }
 
+    /**
+     * TODO: document
+     *
+     * @throws ExecutionException TODO: document
+     * @throws IOException TODO: document
+     * @throws InterruptedException TODO: document
+     */
     public void inputLoop()
         throws ExecutionException, IOException, InterruptedException
     {
@@ -133,7 +150,7 @@ public class Prompt
     {
         if (this.client.getSubscribedTopics().isEmpty())
         {
-            Util.printError(out, "You are not subscribed to any topics.");
+            Util.printError(this.out, "You are not subscribed to any topics.");
         }
         else
         {

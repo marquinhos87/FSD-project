@@ -20,6 +20,11 @@ import java.util.stream.Collectors;
 
 /* -------------------------------------------------------------------------- */
 
+/**
+ * TODO: document
+ *
+ * This class is not thread-safe.
+ */
 public class Client implements AutoCloseable
 {
     // the address of the server this client is connected to
@@ -34,12 +39,45 @@ public class Client implements AutoCloseable
     // the set of currently subscribed topics
     private final Set< String > subscribedTopics;
 
+    /**
+     * TODO: document
+     *
+     * @param type TODO: document
+     * @param request TODO: document
+     * @param <T> TODO: document
+     * @param <U> TODO: document
+     *
+     * @return TODO: document
+     *
+     * @throws ExecutionException TODO: document
+     * @throws InterruptedException TODO: document
+     */
+    private < T, U > U sendAndReceive(String type, T request)
+        throws ExecutionException, InterruptedException
+    {
+        final var requestPayload = this.serializer.encode(request);
+
+        final var replyPayload =
+            this.messaging
+                .sendAndReceive(this.serverAddress, type, requestPayload)
+                .get();
+
+        return this.serializer.decode(replyPayload);
+    }
+
+    /**
+     * TODO: document
+     *
+     * @param serverAddress TODO: document
+     */
     public Client(Address serverAddress)
     {
         this.serverAddress = serverAddress;
 
         this.messaging = new NettyMessagingService(
-            "chirper", Address.local(), new MessagingConfig()
+            "chirper",
+            Address.local(),
+            new MessagingConfig()
         );
 
         this.serializer = Serializer.builder().build();
@@ -48,9 +86,11 @@ public class Client implements AutoCloseable
 
 //        final var executor = Executors.newFixedThreadPool(1);
 //
-//        this.messaging.registerHandler("publish-ack", this::handlePublishAck, executor);
+//        this.messaging.registerHandler("publish-ack",
+//        this::handlePublishAck, executor);
 //
-//        this.address_server = new Address(socketAddress.getHostName(), socketAddress.getPort());
+//        this.address_server = new Address(socketAddress.getHostName(),
+//        socketAddress.getPort());
 //
 //        this.ms = new NettyMessagingService(
 //                "servidor", new Address(socketAddress.getHostName(), 12345),
@@ -59,36 +99,57 @@ public class Client implements AutoCloseable
 //        this.s = new SerializerBuilder().addType(Msg.class).build();
     }
 
+    /**
+     * TODO: document
+     */
     public void start()
     {
         this.messaging.start().join();
     }
 
+    /**
+     * TODO: document
+     */
     @Override
     public void close()
     {
         this.messaging.stop().join();
     }
 
+    /**
+     * TODO: document
+     *
+     * @return TODO: document
+     */
     public Set< String > getSubscribedTopics()
     {
         return Collections.unmodifiableSet(this.subscribedTopics);
     }
 
+    /**
+     * TODO: document
+     *
+     * @param topics TODO: document
+     */
     public void setSubscribedTopics(CharSequence[] topics)
     {
         this.setSubscribedTopics(Arrays.asList(topics));
     }
 
+    /**
+     * TODO: document
+     *
+     * @param topics TODO: document
+     */
     public void setSubscribedTopics(Collection< ? extends CharSequence > topics)
     {
         // validate topics
 
         final var newTopics =
             topics
-            .stream()
-            .map(Util::normalizeTopic)
-            .collect(Collectors.toSet());
+                .stream()
+                .map(Util::normalizeTopic)
+                .collect(Collectors.toSet());
 
         // modify set of subscribed topics
 
@@ -105,24 +166,42 @@ public class Client implements AutoCloseable
 //        sendMsgAsync(sb.toString());
     }
 
+    /**
+     * TODO: document
+     *
+     * @return TODO: document
+     *
+     * @throws ExecutionException TODO: document
+     * @throws InterruptedException TODO: document
+     */
     public List< String > getLatestChirps()
         throws ExecutionException, InterruptedException
     {
-        // encode get request payload
+        // send get request and await reply
 
-        final var reqPayload = this.serializer.encode(
+        final String[] chirps = this.sendAndReceive(
+            "get",
             this.subscribedTopics.toArray(String[]::new)
         );
 
-        // send get request and await reply
+        // check if the server replied with an error
 
-        final var replyPayload = this.sendAndReceive("get", reqPayload);
+        if (chirps == null)
+            throw new IllegalArgumentException();
 
-        // decode reply payload and return the latest chirps
+        // return the latest chirps
 
-        return List.of(this.serializer.< String[] >decode(replyPayload));
+        return Arrays.asList(chirps);
     }
 
+    /**
+     * TODO: document
+     *
+     * @param chirp TODO: document
+     *
+     * @throws ExecutionException TODO: document
+     * @throws InterruptedException TODO: document
+     */
     public void publishChirp(CharSequence chirp)
         throws ExecutionException, InterruptedException
     {
@@ -135,32 +214,14 @@ public class Client implements AutoCloseable
             );
         }
 
-        // encode publish request payload
-
-        final var reqPayload = this.serializer.encode(chirp.toString());
-
         // send publish request and await reply
 
-        final var replyPayload = this.sendAndReceive("publish", reqPayload);
-
-        // decode reply payload
-
-        final var errorMessage = this.serializer.< String >decode(replyPayload);
+        final String error = this.sendAndReceive("publish", chirp.toString());
 
         // check if the server replied with an error
 
-        if (!errorMessage.isEmpty())
-            throw new IllegalArgumentException(errorMessage);
-    }
-
-    private byte[] sendAndReceive(String type, byte[] payload)
-        throws ExecutionException, InterruptedException
-    {
-        return
-            this
-            .messaging
-            .sendAndReceive(this.serverAddress, type, payload)
-            .get();
+        if (error == null)
+            throw new IllegalArgumentException();
     }
 
 //    public void sendMsgAsync(CharSequence chirp)
@@ -173,7 +234,8 @@ public class Client implements AutoCloseable
 //        Msg m = new Msg(action.toString());
 //        byte[] response = new byte[0];
 //        try {
-//            response = ms.sendAndReceive(address_server,"cliente",s.encode(m)).get();
+//            response = ms.sendAndReceive(address_server,"cliente",s.encode
+//            (m)).get();
 //        } catch (InterruptedException | ExecutionException e) {
 //            e.printStackTrace();
 //        }

@@ -5,17 +5,28 @@ package chirper.client;
 import chirper.shared.Util;
 import io.atomix.utils.net.Address;
 import io.atomix.utils.net.MalformedAddressException;
+import io.atomix.utils.serializer.Serializer;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.util.List;
 
 /* -------------------------------------------------------------------------- */
 
+/**
+ * TODO: document
+ */
 public class ClientMain
 {
+    /**
+     * TODO: document
+     *
+     * @param args TODO: document
+     * @throws IOException TODO: document
+     */
     public static void main(String[] args) throws IOException
     {
         try (
@@ -53,10 +64,20 @@ public class ClientMain
         }
     }
 
+    /**
+     * TODO: document
+     *
+     * @param args TODO: document
+     * @return TODO: document
+     */
     private static Address parseArgs(String[] args)
     {
+        // check number of arguments
+
         if (args.length != 1)
             return null;
+
+        // parse argument as an endpoint
 
         try
         {
