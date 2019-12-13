@@ -4,6 +4,8 @@ package chirper.server;
 
 /* -------------------------------------------------------------------------- */
 
+import java.util.Objects;
+
 /**
  * TODO: document
  *
@@ -35,12 +37,21 @@ public class ServerId implements Comparable< ServerId >
         return this.value;
     }
 
-    /**
-     * TODO: document
-     *
-     * @param other TODO: document
-     * @return TODO: document
-     */
+    @Override
+    public boolean equals(Object obj)
+    {
+        return
+            obj != null &&
+            this.getClass() == obj.getClass() &&
+            this.getValue() == ((ServerId)obj).getValue();
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(this.getValue());
+    }
+
     @Override
     public int compareTo(ServerId other)
     {

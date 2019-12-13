@@ -9,7 +9,7 @@ package chirper.server;
  */
 public class MsgAck
 {
-    public final long chirpTimestamp;
+    public long chirpTimestamp;
 
     /**
      * TODO: document

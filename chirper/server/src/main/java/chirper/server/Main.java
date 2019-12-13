@@ -44,9 +44,13 @@ public class Main
             {
                 server.start();
 
-                out.println("Running; press ENTER to exit... ");
+                out.print("Running, press ENTER to exit... ");
+                out.flush();
+
                 in.readLine();
+
                 out.println("Exiting...");
+                out.flush();
             }
         }
     }

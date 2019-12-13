@@ -177,8 +177,8 @@ public class Client implements AutoCloseable
 
         // check if the server replied with an error
 
-        if (error == null)
-            throw new IllegalArgumentException();
+        if (error != null)
+            throw new IllegalArgumentException(error);
     }
 
 //    public void sendMsgAsync(CharSequence chirp)

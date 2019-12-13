@@ -9,8 +9,8 @@ package chirper.server;
  */
 public class MsgChirp
 {
-    public final long timestamp;
-    public final String text;
+    public long timestamp;
+    public String text;
 
     /**
      * TODO: document

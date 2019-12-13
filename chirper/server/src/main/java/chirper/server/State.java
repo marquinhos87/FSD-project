@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -124,9 +125,9 @@ public class State
 
         public Chirp(ServerId serverId, long timestamp, String text)
         {
-            this.serverId = serverId;
+            this.serverId = Objects.requireNonNull(serverId);
             this.timestamp = timestamp;
-            this.text = text;
+            this.text = Objects.requireNonNull(text);
         }
 
         public ServerId getServerId()
