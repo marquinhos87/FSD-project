@@ -67,7 +67,13 @@ public class Prompt
             final var line = this.in.readLine();
 
             if (line == null)
-                break; // no more input, exit input loop
+            {
+                // no more input, exit input loop
+                this.out.println();
+                this.out.println("Exiting...");
+                this.out.flush();
+                break;
+            }
 
             // handle line
 
