@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
 /* -------------------------------------------------------------------------- */
@@ -201,7 +202,8 @@ public class Server implements AutoCloseable
         final var timestamp = this.clock++;
 
         this.pendingChirps.put(
-            timestamp, new PendingChirp(this.remoteServerIds.values(), ackFuture)
+            timestamp,
+            new PendingChirp(this.remoteServerIds.values(), ackFuture)
         );
 
         // send chirp to servers
@@ -263,12 +265,19 @@ class PendingChirp
     {
         this.unackedServerIds = new HashSet<>(serverIds);
         this.onAllAcked = onAllAcked;
+
+        checkEmpty();
     }
 
     public void ackServer(ServerId serverId)
     {
         this.unackedServerIds.remove(serverId);
 
+        checkEmpty();
+    }
+
+    private void checkEmpty()
+    {
         if (this.unackedServerIds.isEmpty())
             this.onAllAcked.complete(null);
     }

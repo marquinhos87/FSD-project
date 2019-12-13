@@ -17,43 +17,37 @@ public class Main
     {
         try (
             final var in = new BufferedReader(new InputStreamReader(System.in));
-            final var out = new PrintWriter(new OutputStreamWriter(System.out));
-            final var err = new PrintWriter(new OutputStreamWriter(System.err))
+            final var out = new PrintWriter(new OutputStreamWriter(System.out))
         )
         {
-//            try
-//            {
-                // check usage and parse arguments
+            // hack: suppress "illegal reflective access" warnings
 
-                if (args.length != 1)
-                {
-                    err.println("Usage: chirper-server <config_file>");
-                    err.flush();
-                    System.exit(2);
-                }
+            System.err.close();
+            System.setErr(System.out);
 
-                // hack: suppress "illegal reflective access" warnings
+            // check usage and parse arguments
 
-                System.err.close();
-                System.setErr(System.out);
+            if (args.length != 1)
+            {
+                err.println("Usage: chirper-server <config_file>");
+                err.flush();
+                System.exit(2);
+            }
 
-                // parse server config
+            // parse server config
 
-                final var config = ServerConfig.parseYamlFile(Path.of(args[0]));
+            final var config = ServerConfig.parseYamlFile(Path.of(args[0]));
 
-                // run server
+            // run server
 
-                try (final var server = new Server(config))
-                {
-                    server.start();
-                    in.readLine();
-                }
-//            }
-//            catch (Exception e)
-//            {
-//                Util.printError(err, e.getMessage());
-//                System.exit(1);
-//            }
+            try (final var server = new Server(config))
+            {
+                server.start();
+
+                out.println("Running; press ENTER to exit... ");
+                in.readLine();
+                out.println("Exiting...");
+            }
         }
     }
 }
