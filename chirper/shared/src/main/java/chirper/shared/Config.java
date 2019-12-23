@@ -47,6 +47,27 @@ public class Config
      */
     public static final String SERVER_ACK_PUBLICATION_MSG_NAME = "s-ack";
 
+    /**
+     * TODO: document
+     *
+     * Sent from server to server.
+     */
+    public static final String SERVER_PREPARE_PUBLICATION_MSG_NAME = "s-prepare";
+
+    /**
+     * TODO: document
+     *
+     * Sent from server to server.
+     */
+    public static final String SERVER_COMMIT_PUBLICATION_MSG_NAME = "s-commit";
+
+    /**
+     * TODO: document
+     *
+     * Sent from server to server.
+     */
+    public static final String SERVER_ABORT_PUBLICATION_MSG_NAME = "s-abort";
+
     private Config()
     {
     }

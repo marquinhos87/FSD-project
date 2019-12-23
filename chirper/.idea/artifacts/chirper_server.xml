@@ -35,7 +35,6 @@
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/io/github/classgraph/classgraph/4.2.3/classgraph-4.2.3.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/google/guava/guava/22.0/guava-22.0.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/io/atomix/atomix-storage/3.1.5/atomix-storage-3.1.5.jar" path-in-jar="/" />
-      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/slf4j/slf4j-nop/1.7.7/slf4j-nop-1.7.7.jar" path-in-jar="/" />
     </root>
   </artifact>
 </component>

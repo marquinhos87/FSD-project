@@ -46,6 +46,12 @@ public class Server implements AutoCloseable
     // TODO: document
     private final State state;
 
+    // TODO: document
+    private final Coordinator coordinator;
+
+    // TODO: document
+    private final Participant participant;
+
     /**
      * TODO: document
      *
@@ -93,6 +99,11 @@ public class Server implements AutoCloseable
         this.clock = Long.MIN_VALUE;
 
         this.pendingChirps = new HashMap<>();
+
+        this.coordinator = new Coordinator();
+
+        this.participant = new Participant();
+
         this.state = new State();
 
         // register message handlers
@@ -104,11 +115,15 @@ public class Server implements AutoCloseable
         );
 
         this.messaging.registerHandler(
-            Config.CLIENT_PUBLISH_MSG_NAME, this::handleClientPublish
+            Config.CLIENT_PUBLISH_MSG_NAME, this::handleClientPublish //Falta "exec"?
         );
 
         this.messaging.registerHandler(
-            Config.SERVER_PUBLISH_MSG_NAME, this::handleServerPublish, exec
+            Config.SERVER_PREPARE_PUBLICATION_MSG_NAME, this::handleServerPrepared, exec
+        );
+
+        this.messaging.registerHandler(
+            Config.SERVER_COMMIT_PUBLICATION_MSG_NAME, this::handleServerCommit, exec
         );
 
         this.messaging.registerHandler(
@@ -160,7 +175,7 @@ public class Server implements AutoCloseable
                 .thenApply(this.serializer::encode);
     }
 
-    private void handleServerPublish(Address from, byte[] payload)
+    private void handleServerPrepared(Address from, byte[] payload)
     {
         final var msg = this.serializer.< MsgChirp >decode(payload);
 
@@ -179,6 +194,10 @@ public class Server implements AutoCloseable
             Config.SERVER_ACK_PUBLICATION_MSG_NAME,
             this.serializer.encode(new MsgAck(this.localServerId, msg.timestamp))
         );
+    }
+
+    private void handleServerCommit(Address from, byte[] payload) {
+
     }
 
     private void handleServerAck(Address from, byte[] payload)
@@ -208,27 +227,26 @@ public class Server implements AutoCloseable
 
         final var timestamp = this.clock++;
 
+        //Put on Journal
         this.pendingChirps.put(
             timestamp,
             new PendingChirp(this.remoteServerAddresses.size(), ackFuture)
         );
 
         // send chirp to servers
-
         final var payload = this.serializer.encode(
             new MsgChirp(this.localServerId, timestamp, chirp)
         );
 
-        final var sendFuture = CompletableFuture.allOf(
-            this.remoteServerAddresses
-                .stream()
-                .map(
-                    address -> this.messaging.sendAsync(
-                        address, Config.SERVER_PUBLISH_MSG_NAME, payload
-                    )
-                )
-                .toArray(CompletableFuture[]::new)
-        );
+        //Send Prepared
+        final var sendFuture = coordinator.prepared(payload,this.remoteServerAddresses,this.messaging);
+
+        //Wait for all
+        sendFuture.thenAcceptBoth(ackFuture, (v1, v2) -> {
+            //Send Commited
+
+        });
+
 
         // (when we sent all reqs and received all acks, ...)
 
