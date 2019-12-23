@@ -34,7 +34,16 @@ public class Coordinator extends Log {
         );
     }
 
-    public void commited() {
-
+    public CompletableFuture<Void> commited(Set<Address> remoteServerAddresses, ManagedMessagingService messaging) {
+        return CompletableFuture.allOf(
+            remoteServerAddresses
+                .stream()
+                .map(
+                    address -> messaging.sendAsync(
+                        address, Config.SERVER_COMMIT_PUBLICATION_MSG_NAME, "".getBytes()
+                    )
+                )
+                .toArray(CompletableFuture[]::new)
+        );
     }
 }

@@ -66,7 +66,21 @@ public class Config
      *
      * Sent from server to server.
      */
-    public static final String SERVER_ABORT_PUBLICATION_MSG_NAME = "s-abort";
+    public static final String SERVER_ROLLBACK_PUBLICATION_MSG_NAME = "s-abort";
+
+    /**
+     * TODO: document
+     *
+     * Sent from server to server.
+     */
+    public static final String SERVER_ACK_ROLLBACK_MSG_NAME = "s-ackrollback";
+
+    /**
+     * TODO: document
+     *
+     * Sent from server to server.
+     */
+    public static final String SERVER_ACK_PREPARED_MSG_NAME = "s-ackprepared";
 
     private Config()
     {

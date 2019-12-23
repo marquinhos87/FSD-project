@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 
 /* -------------------------------------------------------------------------- */
@@ -117,13 +118,9 @@ public class Server implements AutoCloseable
         this.messaging.registerHandler(
             Config.CLIENT_PUBLISH_MSG_NAME, this::handleClientPublish //Falta "exec"?
         );
-
+        //SERVER_PUBLISH_MSG_NAME substituido por SERVER_PREPARE_PUBLICATION_MSG_NAME
         this.messaging.registerHandler(
-            Config.SERVER_PREPARE_PUBLICATION_MSG_NAME, this::handleServerPrepared, exec
-        );
-
-        this.messaging.registerHandler(
-            Config.SERVER_COMMIT_PUBLICATION_MSG_NAME, this::handleServerCommit, exec
+            Config.SERVER_PREPARE_PUBLICATION_MSG_NAME, this::handleServerPublish, exec
         );
 
         this.messaging.registerHandler(
@@ -175,9 +172,9 @@ public class Server implements AutoCloseable
                 .thenApply(this.serializer::encode);
     }
 
-    private void handleServerPrepared(Address from, byte[] payload)
+    private void handleServerPublish(Address from, byte[] payload)
     {
-        final var msg = this.serializer.< MsgChirp >decode(payload);
+        /*final var msg = this.serializer.< MsgChirp >decode(payload);
 
         // "synchronize" and tick clock
 
@@ -193,11 +190,53 @@ public class Server implements AutoCloseable
             from,
             Config.SERVER_ACK_PUBLICATION_MSG_NAME,
             this.serializer.encode(new MsgAck(this.localServerId, msg.timestamp))
-        );
-    }
+        );*/
 
-    private void handleServerCommit(Address from, byte[] payload) {
+        //Prepare
+        final var msg = this.serializer.< MsgChirp >decode(payload);
+        this.clock = Math.max(this.clock, msg.timestamp) + 1;
+        //TODO: Add to journal
+        this.participant.add(msg);
+        this.participant.add(new Prepared());
 
+        //SendAndReceive
+        byte[] sendFuture = new byte[0];
+        try {
+            sendFuture = this.messaging.sendAndReceive(from,Config.SERVER_ACK_PREPARED_MSG_NAME,"".getBytes()).get();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+
+        String aux = new String(sendFuture);
+
+        if(aux.equals(Config.SERVER_COMMIT_PUBLICATION_MSG_NAME))
+        {
+            //Commit
+            MsgChirp m = (MsgChirp) this.participant.get();
+            this.state.addChirp(m.serverId,m.timestamp,m.text);
+            this.participant.add(new Commit());
+
+            //SendACK
+            this.messaging.sendAsync(
+                from,
+                Config.SERVER_ACK_PUBLICATION_MSG_NAME,
+                this.serializer.encode(new MsgAck(this.localServerId, msg.timestamp))
+            );
+        }
+        if(aux.equals(Config.SERVER_ROLLBACK_PUBLICATION_MSG_NAME))
+        {
+            //Rollback
+            //TODO: Remove from journal
+
+            //SendACK
+            this.messaging.sendAsync(
+                from,
+                Config.SERVER_ACK_ROLLBACK_MSG_NAME,
+                this.serializer.encode(new MsgAck(this.localServerId, msg.timestamp))
+            );
+        }
     }
 
     private void handleServerAck(Address from, byte[] payload)
@@ -238,21 +277,32 @@ public class Server implements AutoCloseable
             new MsgChirp(this.localServerId, timestamp, chirp)
         );
 
+        /*final var sendFuture = CompletableFuture.allOf(
+            this.remoteServerAddresses
+                .stream()
+                .map(
+                    address -> this.messaging.sendAsync(
+                        address, Config.SERVER_PUBLISH_MSG_NAME, payload
+                    )
+                )
+                .toArray(CompletableFuture[]::new)
+        );*/
+
         //Send Prepared
         final var sendFuture = coordinator.prepared(payload,this.remoteServerAddresses,this.messaging);
 
-        //Wait for all
-        sendFuture.thenAcceptBoth(ackFuture, (v1, v2) -> {
-            //Send Commited
+        // (when we sent all preps and received all acks, ...)
+        sendFuture.thenAcceptBoth(ackFuture, (v1, v2) -> {});
 
-        });
-
+        //Send Commited
+        final var sendFuturee = coordinator.commited(this.remoteServerAddresses,this.messaging);
 
         // (when we sent all reqs and received all acks, ...)
 
-        return sendFuture.thenAcceptBoth(ackFuture, (v1, v2) -> {
+        return sendFuturee.thenAcceptBoth(ackFuture, (v1, v2) -> {
             this.pendingChirps.remove(timestamp);
             this.state.addChirp(this.localServerId, timestamp, chirp);
+
         });
     }
 }
