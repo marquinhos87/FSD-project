@@ -8,17 +8,28 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 
-public class Coordinator extends Log {
+public class Coordinator {
 
-    private final int numRemoteServers;
+    private final Log log;
     private final Set< ServerId > ackedServerIds;
     private final CompletableFuture< Void > onAllAcked;
 
-    public Coordinator() {
-        super(new CompletableFuture<>(), "nome");
-        numRemoteServers = 1;
-        ackedServerIds = new TreeSet<>();
-        onAllAcked = new CompletableFuture<>();
+    public Coordinator(int id) {
+        this.ackedServerIds = new TreeSet<>();
+        this.onAllAcked = new CompletableFuture<>();
+        this.log = new Log(id);
+    }
+
+    public void add(Object o) {
+        log.add(o);
+    }
+
+    public Object get() {
+        return log.get();
+    }
+
+    public void remove(int i) {
+        log.remove(i);
     }
 
     public CompletableFuture<Void> prepared(byte[] payload, Set<Address> remoteServerAddresses, ManagedMessagingService messaging) {
@@ -26,21 +37,34 @@ public class Coordinator extends Log {
             remoteServerAddresses
                 .stream()
                 .map(
-                    address -> messaging.sendAsync(
-                        address, Config.SERVER_PREPARE_PUBLICATION_MSG_NAME, payload
-                    )
+                    address -> messaging.sendAndReceive(
+                                address, Config.SERVER_PREPARE_PUBLICATION_MSG_NAME, payload
+                            )
                 )
                 .toArray(CompletableFuture[]::new)
         );
     }
 
-    public CompletableFuture<Void> commited(Set<Address> remoteServerAddresses, ManagedMessagingService messaging) {
+    public CompletableFuture<Void> commited(byte[] payload, Set<Address> remoteServerAddresses, ManagedMessagingService messaging) {
         return CompletableFuture.allOf(
             remoteServerAddresses
                 .stream()
                 .map(
-                    address -> messaging.sendAsync(
-                        address, Config.SERVER_COMMIT_PUBLICATION_MSG_NAME, "".getBytes()
+                    address -> messaging.sendAndReceive(
+                                address, Config.SERVER_COMMIT_PUBLICATION_MSG_NAME, payload
+                            )
+                )
+                .toArray(CompletableFuture[]::new)
+        );
+    }
+
+    public CompletableFuture<Void> rollback(byte[] payload, Set<Address> remoteServerAddresses, ManagedMessagingService messaging) {
+        return CompletableFuture.allOf(
+            remoteServerAddresses
+                .stream()
+                .map(
+                    address -> messaging.sendAndReceive(
+                        address, Config.SERVER_ROLLBACK_PUBLICATION_MSG_NAME, payload
                     )
                 )
                 .toArray(CompletableFuture[]::new)

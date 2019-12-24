@@ -13,12 +13,12 @@ public class Log {
     private Serializer s = Serializer.builder().withTypes().build();
     private CompletableFuture<Void> cf;
 
-    public Log(CompletableFuture<Void> cf, String nome) {
+    public Log(int id) {
         this.sj =  SegmentedJournal.<Object>builder()
-            .withName(nome)
+            .withName("server"+id)
             .withSerializer(s)
             .build();
-        this.cf = cf;
+        this.cf = new CompletableFuture<>();
     }
 
     public void add(Object o) {
@@ -40,5 +40,14 @@ public class Log {
         }
         r.close();
         return aux;
+    }
+
+    public void remove(int i) {
+        SegmentedJournalWriter<Object> w = sj.writer();
+        w.truncate(w.getLastIndex()-i);
+        CompletableFuture.supplyAsync(()->{w.flush();return null;})
+            .thenRun(()->{
+                w.close();
+            });
     }
 }
