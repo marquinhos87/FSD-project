@@ -22,7 +22,7 @@ public class PendingChirp
     /**
      * TODO: document
      *
-     * @param serverIds TODO: document
+     * @param numRemoteServers TODO: document
      * @param onAllAcked TODO: document
      */
     public PendingChirp(
@@ -56,7 +56,9 @@ public class PendingChirp
     private void checkAllAcked()
     {
         if (this.ackedServerIds.size() == this.numRemoteServers)
+        {
             this.onAllAcked.complete(null);
+        }
     }
 }
 

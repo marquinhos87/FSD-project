@@ -9,12 +9,7 @@ import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Serializer;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 
 /* -------------------------------------------------------------------------- */
@@ -42,14 +37,17 @@ public class Server implements AutoCloseable
     // all chirps being published by this server, keyed by their timestamps
     private final Map< Long, PendingChirp > pendingChirps;
 
+    // Participant instance for a Two Phase Commit iteration
+    private Participant participantRole;
+
     // TODO: document
     private final State state;
 
     // TODO: document
-    private final Coordinator coordinator;
-
+    //private final Coordinator coordinator;
+    private final Log coordinatorLog;
     // TODO: document
-    private final Log participant;
+    private final Log participantLog;
 
     /**
      * TODO: document
@@ -92,16 +90,16 @@ public class Server implements AutoCloseable
         this.serializer =
             Serializer
                 .builder()
-                .withTypes(MsgChirp.class, MsgAck.class, ServerId.class)
+                .withTypes(MsgChirp.class, MsgAck.class, ServerId.class, MsgCommit.class, MsgRollback.class)
                 .build();
 
         this.clock = Long.MIN_VALUE;
 
         this.pendingChirps = new HashMap<>();
 
-        this.coordinator = new Coordinator(this.localServerId.getValue());
+        this.coordinatorLog = new Log("coordinator",this.localServerId.getValue());
 
-        this.participant = new Log(this.localServerId.getValue());
+        this.participantLog = new Log("participant",this.localServerId.getValue());
 
         this.state = new State();
 
@@ -116,11 +114,11 @@ public class Server implements AutoCloseable
         this.messaging.registerHandler(
             Config.CLIENT_PUBLISH_MSG_NAME, this::handleClientPublish
         );
-        //SERVER_PUBLISH_MSG_NAME substituido por SERVER_PREPARE_PUBLICATION_MSG_NAME
+
         this.messaging.registerHandler(
-            Config.SERVER_PREPARE_PUBLICATION_MSG_NAME, this::handleServerPrepare, exec
+            Config.SERVER_PUBLISH_MSG_NAME, this::handleServerPublish, exec
         );
-        //Remover para utilizar o próximo, já não está a ser utilizado
+
         this.messaging.registerHandler(
             Config.SERVER_ACK_PUBLICATION_MSG_NAME, this::handleServerAck, exec
         );
@@ -178,9 +176,10 @@ public class Server implements AutoCloseable
                 .thenApply(this.serializer::encode);
     }
 
-    private CompletableFuture<Object> handleServerPrepare(Address from, byte[] payload)
+    private void handleServerPublish(Address from, byte[] payload)
     {
-        /*final var msg = this.serializer.< MsgChirp >decode(payload);
+
+        final var msg = this.serializer.< MsgChirp >decode(payload);
 
         // "synchronize" and tick clock
 
@@ -190,42 +189,54 @@ public class Server implements AutoCloseable
 
         this.state.addChirp(msg.serverId, msg.timestamp, msg.text);
 
-        // send acknowledgment
+        // Create new participant for this Two Phase Commit iteration
+        System.out.println("First phase pf the 2PC");
+        var decision = new CompletableFuture< Void >();
+
+        this.participantRole = new Participant(decision,participantLog,msg);
+
+        // send acknowledgment - First phase answer
 
         this.messaging.sendAsync(
             from,
             Config.SERVER_ACK_PUBLICATION_MSG_NAME,
             this.serializer.encode(new MsgAck(this.localServerId, msg.timestamp))
-        );*/
+        );
 
-        //Prepare
-        final var msg = this.serializer.< MsgChirp >decode(payload);
-        this.clock = Math.max(this.clock, msg.timestamp) + 1;
-        //Add to journal
-        this.participant.add(msg);
-        this.participant.add(new Prepared());
+        // Begin Second Phase
 
-        //Send Ack Prepared
-        return CompletableFuture.completedFuture(null);
-        }
+        decision.thenAccept(v -> {
+            // Act according to decision made by the Coordinator
+            var action = this.participantRole.getDecision();
+            System.out.println("Second phase pf the 2PC");
+            if (action instanceof MsgCommit)
+            {
+                this.participantRole.commit();
+            }
+            else
+                this.participantRole.beginRollBack();
 
-    private CompletableFuture<Object> handleServerCommit(Address from, byte[] payload) {
-        //Commit
-        MsgChirp msg = (MsgChirp) this.participant.get();
-        this.state.addChirp(msg.serverId, msg.timestamp, msg.text);
-        //Add commit to journal
-        this.participant.add(new Commit());
+            // send acknowledgment - Two Phase Commit Over
 
-        //Send Ack Commit
-        return CompletableFuture.completedFuture(null);
+            this.messaging.sendAsync(
+                from,
+                Config.SERVER_ACK_PUBLICATION_MSG_NAME,
+                this.serializer.encode(new MsgAck(this.localServerId, msg.timestamp))
+            );
+        });
+
     }
 
-    private CompletableFuture<Object> handleServerRollback(Address from, byte[] payload) {
-        //Rollback
-        MsgRol msg = this.serializer.decode(payload);
-        this.participant.remove(msg.numRemove);
-        return CompletableFuture.completedFuture(null);
+    private void handleServerCommit(Address from, byte[] payload) {
+        final var msg = this.serializer.< MsgCommit >decode(payload);
 
+        this.participantRole.setDecision(msg);
+    }
+
+    private void handleServerRollback(Address from, byte[] payload) {
+        final var msg = this.serializer.< MsgRollback >decode(payload);
+
+        this.participantRole.setDecision(msg);
     }
 
     private void handleServerAck(Address from, byte[] payload)
@@ -249,22 +260,31 @@ public class Server implements AutoCloseable
      */
     private CompletableFuture< Void > publishChirp(String chirp)
     {
-        //var ackFuture = new CompletableFuture< Void >();
+        System.out.println("About to Start publishing Chirp...");
 
-        // create pending chirp
+        var ackFuture = new CompletableFuture< Void >();
 
-        //final var timestamp = this.clock++;
+        //create pending chirp
 
-        //Put on Journal
-        /*this.pendingChirps.put(
-            timestamp,
+        final var timestamp = this.clock++;
+
+        this.pendingChirps.put(
+             timestamp,
             new PendingChirp(this.remoteServerAddresses.size(), ackFuture)
         );
 
+        // Insert participants into Log
+
+        coordinatorLog.add(this.remoteServerAddresses);
+
         // send chirp to servers
+        var msgchirp = new MsgChirp(this.localServerId, timestamp, chirp);
+
         final var payload = this.serializer.encode(
-            new MsgChirp(this.localServerId, timestamp, chirp)
+            msgchirp
         );
+
+        System.out.println("Starting First phase of the 2PC");
 
         final var sendFuture = CompletableFuture.allOf(
             this.remoteServerAddresses
@@ -279,45 +299,54 @@ public class Server implements AutoCloseable
 
         // (when we sent all reqs and received all acks, ...)
 
-        return sendFuturee.thenAcceptBoth(ackFuture, (v1, v2) -> {
+        return sendFuture.thenAcceptBoth(ackFuture, (v1, v2) -> {
+
+            this.state.addChirp(this.localServerId, timestamp, chirp);
+            this.participantLog.add(msgchirp);
+            this.participantLog.add(new Prepared());
+
+            System.out.println("Starting Second phase of the 2PC");
+            this.pendingChirps.remove(timestamp);
+
+            var secondPhaseAcks = new CompletableFuture< Void >();
+
+            this.pendingChirps.put(
+                timestamp,
+                new PendingChirp(this.remoteServerAddresses.size(), secondPhaseAcks)
+            );
+
+            // Insert Commit Marker into Coordinator Log - Falta tratar Rollback
+            this.coordinatorLog.add(new Commit());
+
+            final var commit = this.serializer.encode(new MsgCommit(this.localServerId,timestamp));
+
+            final var sendCommit = CompletableFuture.allOf(
+                this.remoteServerAddresses
+                    .stream()
+                    .map(
+                        address -> this.messaging.sendAsync(
+                            address, Config.SERVER_COMMIT_PUBLICATION_MSG_NAME, commit
+                        )
+                    )
+                    .toArray(CompletableFuture[]::new)
+            );
+
+            // Gather all acks of the second phase
+
+            sendCommit.thenAcceptBoth(secondPhaseAcks, (v3, v4) -> {
+
+                this.participantLog.add(new Commit());
+                this.pendingChirps.remove(timestamp);
+
+            });
+
+        });
+
+        /*
+        return sendFuture.thenAcceptBoth(ackFuture, (v1, v2) -> {
             this.pendingChirps.remove(timestamp);
             this.state.addChirp(this.localServerId, timestamp, chirp);
-        });*/
-
-        final var timestamp = this.clock++;
-
-        // send chirp to servers
-        final var payload = this.serializer.encode(
-            new MsgChirp(this.localServerId, timestamp, chirp)
-        );
-
-        //Send Prepared
-        try {
-            coordinator.prepared(payload,this.remoteServerAddresses,this.messaging).get(2, TimeUnit.SECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            final var msgrol = this.serializer.encode(new MsgRol(this.localServerId,this.clock,1));
-            coordinator.rollback(msgrol,this.remoteServerAddresses, this.messaging);
-            coordinator.remove(1);
-            Throwable t = new Throwable("Error");
-            return CompletableFuture.failedFuture(t);
-        }
-        this.coordinator.add(this.serializer.< MsgChirp >decode(payload));
-        this.coordinator.add(new Prepared());
-
-        final var msgcom = this.serializer.encode(new MsgCom(this.localServerId,this.clock));
-        //Send Commited
-        try {
-            coordinator.commited(msgcom,this.remoteServerAddresses, this.messaging).get(2,TimeUnit.SECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            final var msgrol = this.serializer.encode(new MsgRol(this.localServerId,this.clock,2));
-            coordinator.rollback(msgrol,this.remoteServerAddresses, this.messaging);
-            coordinator.remove(2);
-            Throwable t = new Throwable("Error");
-            return CompletableFuture.failedFuture(t);
-        }
-        this.coordinator.add(new Commit());
-        this.state.addChirp(this.localServerId, timestamp, chirp);
-        return CompletableFuture.completedFuture(null);
+        }); */
     }
 }
 
