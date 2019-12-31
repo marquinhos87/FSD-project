@@ -16,8 +16,9 @@ public class PendingChirp
 {
     private final int numRemoteServers;
     private final Set< ServerId > ackedServerIds;
-
+    private final Set< ServerId > votedServerIds;
     private final CompletableFuture< Void > onAllAcked;
+    private final CompletableFuture< Void > onAllVoted;
 
     /**
      * TODO: document
@@ -27,15 +28,41 @@ public class PendingChirp
      */
     public PendingChirp(
         int numRemoteServers,
-        CompletableFuture< Void > onAllAcked
+        CompletableFuture< Void > onAllAcked,
+        CompletableFuture< Void > onAllVoted
     )
     {
         this.numRemoteServers = numRemoteServers;
         this.ackedServerIds = new HashSet<>();
-
+        this.votedServerIds = new HashSet<>();
         this.onAllAcked = Objects.requireNonNull(onAllAcked);
+        this.onAllVoted = Objects.requireNonNull(onAllVoted);
 
+        checkAllVoted();
         checkAllAcked();
+    }
+
+    /**
+     * TODO: document
+     *
+     * @param serverId TODO: document
+     */
+    public void serverVote(ServerId serverId)
+    {
+        this.votedServerIds.add(serverId);
+
+        checkAllVoted();
+    }
+
+    /**
+     * TODO: document
+     */
+    private void checkAllVoted()
+    {
+        if (this.votedServerIds.size() == this.numRemoteServers)
+        {
+            this.onAllVoted.complete(null);
+        }
     }
 
     /**

@@ -38,7 +38,7 @@ public class Server implements AutoCloseable
     private final Map< Long, PendingChirp > pendingChirps;
 
     // Participant instance for a Two Phase Commit iteration
-    private Participant participantRole;
+    private final Map< Long, Participant > participantRole;
 
     // TODO: document
     private final State state;
@@ -97,6 +97,8 @@ public class Server implements AutoCloseable
 
         this.pendingChirps = new HashMap<>();
 
+        this.participantRole = new HashMap<>();
+
         this.coordinatorLog = new Log("coordinator",this.localServerId.getValue());
 
         this.participantLog = new Log("participant",this.localServerId.getValue());
@@ -121,6 +123,10 @@ public class Server implements AutoCloseable
 
         this.messaging.registerHandler(
             Config.SERVER_ACK_PUBLICATION_MSG_NAME, this::handleServerAck, exec
+        );
+
+        this.messaging.registerHandler(
+            Config.SERVER_VOTE_OK_MSG_NAME, this::handleServerOk, exec
         );
 
         this.messaging.registerHandler(
@@ -176,6 +182,10 @@ public class Server implements AutoCloseable
                 .thenApply(this.serializer::encode);
     }
 
+    /**
+     * Participants get to know of a new Chirp and are asked to prepare by the Coordinator.
+     * Start of the Two Phase Commit.
+     */
     private void handleServerPublish(Address from, byte[] payload)
     {
 
@@ -185,65 +195,120 @@ public class Server implements AutoCloseable
 
         this.clock = Math.max(this.clock, msg.timestamp) + 1;
 
-        // add chirp to state
+        // add chirp to state - Nao pode ser este chirp ainda nao pode aparecer
 
-        this.state.addChirp(msg.serverId, msg.timestamp, msg.text);
+        System.out.println("First phase of the 2PC");
 
-        // Create new participant for this Two Phase Commit iteration
-        System.out.println("First phase pf the 2PC");
-        var decision = new CompletableFuture< Void >();
+        // prepare
 
-        this.participantRole = new Participant(decision,participantLog,msg);
+        var decision = prepareCommit(msg);
 
-        // send acknowledgment - First phase answer
+        // send acknowledgment, Vote OK - First phase answer
 
         this.messaging.sendAsync(
             from,
-            Config.SERVER_ACK_PUBLICATION_MSG_NAME,
+            Config.SERVER_VOTE_OK_MSG_NAME,
             this.serializer.encode(new MsgAck(this.localServerId, msg.timestamp))
         );
 
-        // Begin Second Phase
+        // wait for the Outcome, Coordinator decision
 
-        decision.thenAccept(v -> {
+        waitOutcome(decision,from,msg.timestamp);
+
+    }
+
+    /**
+     * Wait for the outcome of the the two phase commit.
+     * @param decision
+     * @param from
+     * @param timestamp
+     */
+    private void waitOutcome(
+        CompletableFuture< Void > decision,
+        Address from,
+        long timestamp
+        )
+    {
+
+        decision.thenAccept(v ->
+        {
+
             // Act according to decision made by the Coordinator
-            var action = this.participantRole.getDecision();
-            System.out.println("Second phase pf the 2PC");
+            var participant = this.participantRole.get(timestamp);
+
+            var action = participant.getDecision();
+
+            System.out.println("Second phase of the 2PC");
+
             if (action instanceof MsgCommit)
             {
-                this.participantRole.commit();
+                var msg = participant.getMsgChirp();
+                System.out.println("Decision: Commit Chirp -> "+msg.text);
+                this.state.addChirp(msg.serverId, msg.timestamp, msg.text);
+
+                participant.commit();
+
             }
-            else
-                this.participantRole.beginRollBack();
+            else {
+                participant.beginRollBack();
+            }
+        }
+        );
 
-            // send acknowledgment - Two Phase Commit Over
+        // send acknowledgment - Two Phase Commit Over
+        this.messaging.sendAsync(
+            from,
+            Config.SERVER_ACK_PUBLICATION_MSG_NAME,
+            this.serializer.encode(new MsgAck(this.localServerId, timestamp))
+        );
 
-            this.messaging.sendAsync(
-                from,
-                Config.SERVER_ACK_PUBLICATION_MSG_NAME,
-                this.serializer.encode(new MsgAck(this.localServerId, msg.timestamp))
-            );
-        });
-
+        System.out.println("Terminou 2PC.");
     }
 
-    private void handleServerCommit(Address from, byte[] payload) {
+    /**
+     * Prepare the log for the new chirp.
+     * @param msg
+     * @return
+     */
+    private CompletableFuture< Void > prepareCommit(MsgChirp msg)
+    {
+        var decision = new CompletableFuture< Void >();
+
+        var participant = new Participant(decision,participantLog,msg);
+
+        this.participantRole.put(msg.timestamp,participant);
+
+        participant.prepare();
+
+        return decision;
+    }
+
+    private void handleServerCommit(Address from, byte[] payload)
+    {
         final var msg = this.serializer.< MsgCommit >decode(payload);
 
-        this.participantRole.setDecision(msg);
+        this.participantRole.get(msg.timestamp).setDecision(msg);
     }
 
-    private void handleServerRollback(Address from, byte[] payload) {
+    private void handleServerRollback(Address from, byte[] payload)
+    {
         final var msg = this.serializer.< MsgRollback >decode(payload);
 
-        this.participantRole.setDecision(msg);
+        this.participantRole.get(msg.timestamp).setDecision(msg);
     }
 
     private void handleServerAck(Address from, byte[] payload)
     {
         final var msg = this.serializer.< MsgAck >decode(payload);
 
-        this.pendingChirps.get(msg.chirpTimestamp).ackServer(msg.serverId);
+        this.pendingChirps.get(msg.timestamp).ackServer(msg.serverId);
+    }
+
+    private void handleServerOk(Address from, byte[] payload)
+    {
+        final var msg = this.serializer.< MsgAck >decode(payload);
+
+        this.pendingChirps.get(msg.timestamp).serverVote(msg.serverId);
     }
 
     /**
@@ -262,22 +327,48 @@ public class Server implements AutoCloseable
     {
         System.out.println("About to Start publishing Chirp...");
 
+        // 2 Completables, 1 for the Server Votes (Phase 1) and 1 for the Acks (Phase 2)
+
+        var voteFuture = new CompletableFuture< Void >();
         var ackFuture = new CompletableFuture< Void >();
 
-        //create pending chirp
+        // create pending chirp
 
         final var timestamp = this.clock++;
 
         this.pendingChirps.put(
              timestamp,
-            new PendingChirp(this.remoteServerAddresses.size(), ackFuture)
+            new PendingChirp(this.remoteServerAddresses.size(), ackFuture, voteFuture)
         );
 
-        // Insert participants into Log
+        var firstPhase = askToVote(voteFuture,chirp,timestamp);
+
+        return firstPhase.thenRun(()->
+        {
+            askToCommit(ackFuture,timestamp,chirp).thenRun(()->
+            {
+                this.pendingChirps.remove(timestamp);
+                this.state.addChirp(this.localServerId, timestamp, chirp);
+                System.out.println("Terminou o 2PC.");
+            });
+
+        });
+
+        /*
+        return sendFuture.thenAcceptBoth(ackFuture, (v1, v2) -> {
+            this.pendingChirps.remove(timestamp);
+            this.state.addChirp(this.localServerId, timestamp, chirp);
+        }); */
+    }
+
+    public CompletableFuture< Void > askToVote(CompletableFuture< Void > voteFuture, String chirp, long timestamp)
+    {
+        // Insert participants into Coordinator Log
 
         coordinatorLog.add(this.remoteServerAddresses);
 
         // send chirp to servers
+
         var msgchirp = new MsgChirp(this.localServerId, timestamp, chirp);
 
         final var payload = this.serializer.encode(
@@ -299,54 +390,39 @@ public class Server implements AutoCloseable
 
         // (when we sent all reqs and received all acks, ...)
 
-        return sendFuture.thenAcceptBoth(ackFuture, (v1, v2) -> {
+        return sendFuture.thenAcceptBoth(voteFuture, (v1, v2) -> {
 
-            this.state.addChirp(this.localServerId, timestamp, chirp);
+            System.out.println("Recebeu todos os Votos.");
+
             this.participantLog.add(msgchirp);
             this.participantLog.add(new Prepared());
 
-            System.out.println("Starting Second phase of the 2PC");
-            this.pendingChirps.remove(timestamp);
-
-            var secondPhaseAcks = new CompletableFuture< Void >();
-
-            this.pendingChirps.put(
-                timestamp,
-                new PendingChirp(this.remoteServerAddresses.size(), secondPhaseAcks)
-            );
-
-            // Insert Commit Marker into Coordinator Log - Falta tratar Rollback
-            this.coordinatorLog.add(new Commit());
-
-            final var commit = this.serializer.encode(new MsgCommit(this.localServerId,timestamp));
-
-            final var sendCommit = CompletableFuture.allOf(
-                this.remoteServerAddresses
-                    .stream()
-                    .map(
-                        address -> this.messaging.sendAsync(
-                            address, Config.SERVER_COMMIT_PUBLICATION_MSG_NAME, commit
-                        )
-                    )
-                    .toArray(CompletableFuture[]::new)
-            );
-
-            // Gather all acks of the second phase
-
-            sendCommit.thenAcceptBoth(secondPhaseAcks, (v3, v4) -> {
-
-                this.participantLog.add(new Commit());
-                this.pendingChirps.remove(timestamp);
-
-            });
-
         });
+    }
 
-        /*
-        return sendFuture.thenAcceptBoth(ackFuture, (v1, v2) -> {
-            this.pendingChirps.remove(timestamp);
-            this.state.addChirp(this.localServerId, timestamp, chirp);
-        }); */
+    public CompletableFuture< Void > askToCommit(CompletableFuture< Void > ackFuture, long timestamp, String chirp)
+    {
+        //this.coordinatorLog.add(new Commit());
+
+        final var commit = this.serializer.encode(new MsgCommit(this.localServerId,timestamp));
+
+        final var sendCommit = CompletableFuture.allOf(
+            this.remoteServerAddresses
+                .stream()
+                .map(
+                    address -> this.messaging.sendAsync(
+                        address, Config.SERVER_COMMIT_PUBLICATION_MSG_NAME, commit
+                    )
+                )
+                .toArray(CompletableFuture[]::new)
+        );
+
+        // Gather all Acks of the second phase
+
+        return sendCommit.thenAcceptBoth(ackFuture, (v3, v4) -> {
+            System.out.println("Recebeu todos os ACK.");
+            this.participantLog.add(new Commit());
+        });
     }
 }
 

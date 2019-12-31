@@ -73,14 +73,7 @@ public class Config
      *
      * Sent from server to server.
      */
-    public static final String SERVER_ACK_ROLLBACK_MSG_NAME = "s-ackrollback";
-
-    /**
-     * TODO: document
-     *
-     * Sent from server to server.
-     */
-    public static final String SERVER_ACK_PREPARED_MSG_NAME = "s-ackprepared";
+    public static final String SERVER_VOTE_OK_MSG_NAME = "s-ok";
 
     private Config()
     {

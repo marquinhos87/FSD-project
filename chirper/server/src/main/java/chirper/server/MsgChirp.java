@@ -9,10 +9,10 @@ import java.util.Objects;
 /**
  * TODO: document
  */
-public class MsgChirp
+public class MsgChirp extends Msg
 {
-    public ServerId serverId;
-    public long timestamp;
+    //public ServerId serverId;
+    //public long timestamp;
     public String text;
 
     /**
@@ -23,8 +23,9 @@ public class MsgChirp
      */
     public MsgChirp(ServerId serverId, long timestamp, String text)
     {
-        this.serverId = Objects.requireNonNull(serverId);
-        this.timestamp = timestamp;
+        super(serverId,timestamp);
+        //this.serverId = Objects.requireNonNull(serverId);
+        //this.timestamp = timestamp;
         this.text = Objects.requireNonNull(text);
     }
 }

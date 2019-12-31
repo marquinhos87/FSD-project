@@ -22,10 +22,14 @@ public class Participant {
         this.log = log;
         this.chirp = chirp;
 
-        log.add(this.chirp); // Insert chirp to commit into the participant log
-        log.add(new Prepared()); // Insert prepared marker into the participant log
+        log.add(this.chirp);
 
         checkDecision();
+    }
+
+    public void prepare() {
+
+        log.add(new Prepared());
     }
 
     public void setDecision(Msg decision)
@@ -33,6 +37,11 @@ public class Participant {
         this.decision = decision;
 
         checkDecision();
+    }
+
+    public MsgChirp getMsgChirp()
+    {
+        return this.chirp;
     }
 
     public Msg getDecision()
@@ -48,7 +57,6 @@ public class Participant {
     public void commit()
     {
         // TODO
-        System.out.println("Decision: Commit");
         this.log.add(new Commit());
     }
 

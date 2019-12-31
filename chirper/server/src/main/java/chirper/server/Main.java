@@ -44,7 +44,7 @@ public class Main
             {
                 server.start();
 
-                out.print("Running, press ENTER to exit... ");
+                out.println("Running, press ENTER to exit... ");
                 out.flush();
 
                 in.readLine();

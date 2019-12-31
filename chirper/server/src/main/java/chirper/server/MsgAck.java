@@ -9,10 +9,10 @@ import java.util.Objects;
 /**
  * TODO: document
  */
-public class MsgAck
+public class MsgAck extends Msg
 {
-    public ServerId serverId;
-    public long chirpTimestamp;
+    //public ServerId serverId;
+    //public long chirpTimestamp;
 
     /**
      * TODO: document
@@ -21,8 +21,9 @@ public class MsgAck
      */
     public MsgAck(ServerId serverId, long chirpTimestamp)
     {
-        this.serverId = Objects.requireNonNull(serverId);
-        this.chirpTimestamp = chirpTimestamp;
+        super(serverId,chirpTimestamp);
+        //this.serverId = Objects.requireNonNull(serverId);
+        //this.chirpTimestamp = chirpTimestamp;
     }
 }
 

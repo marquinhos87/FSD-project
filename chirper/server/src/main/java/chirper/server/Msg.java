@@ -5,7 +5,7 @@ import java.util.Objects;
 public class Msg {
 
     public ServerId serverId;
-    public long chirpTimestamp;
+    public long timestamp;
 
     /**
      * TODO: document
@@ -15,7 +15,7 @@ public class Msg {
     public Msg(ServerId serverId, long chirpTimestamp)
     {
         this.serverId = Objects.requireNonNull(serverId);
-        this.chirpTimestamp = chirpTimestamp;
+        this.timestamp = chirpTimestamp;
     }
 
 }
