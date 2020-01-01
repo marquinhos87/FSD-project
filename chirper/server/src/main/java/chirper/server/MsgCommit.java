@@ -9,15 +9,14 @@ package chirper.server;
  */
 public class MsgCommit extends Msg
 {
+
     /**
      * TODO: document
-     *
-     * @param chirpTimestamp TODO: document
      */
-    public MsgCommit(ServerId serverId, long chirpTimestamp)
+    public MsgCommit(ServerId serverId, long timestamp)
     {
 
-        super(serverId,chirpTimestamp);
+        super(serverId,timestamp);
         /*this.serverId = Objects.requireNonNull(serverId);
         this.chirpTimestamp = chirpTimestamp;*/
     }

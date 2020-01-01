@@ -10,12 +10,12 @@ public class Msg {
     /**
      * TODO: document
      *
-     * @param chirpTimestamp TODO: document
+     * @param timestamp TODO: document
      */
-    public Msg(ServerId serverId, long chirpTimestamp)
+    public Msg(ServerId serverId, long timestamp)
     {
         this.serverId = Objects.requireNonNull(serverId);
-        this.timestamp = chirpTimestamp;
+        this.timestamp = timestamp;
     }
 
 }

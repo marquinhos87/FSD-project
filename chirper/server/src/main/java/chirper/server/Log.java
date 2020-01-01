@@ -38,7 +38,6 @@ public class Log {
             return null;
         });
         /*    .thenRun(()->{
-                System.out.println("Fechar descritor.");
                 w.close();
             });*/
     }

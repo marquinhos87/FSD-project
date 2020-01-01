@@ -195,8 +195,6 @@ public class Server implements AutoCloseable
 
         this.clock = Math.max(this.clock, msg.timestamp) + 1;
 
-        // add chirp to state - Nao pode ser este chirp ainda nao pode aparecer
-
         System.out.println("First phase of the 2PC");
 
         // prepare
@@ -252,17 +250,18 @@ public class Server implements AutoCloseable
             else {
                 participant.beginRollBack();
             }
+
+            // send acknowledgment - Two Phase Commit Over
+            this.messaging.sendAsync(
+                from,
+                Config.SERVER_ACK_PUBLICATION_MSG_NAME,
+                this.serializer.encode(new MsgAck(this.localServerId, timestamp))
+            );
+
+            System.out.println("Terminou 2PC.");
         }
         );
 
-        // send acknowledgment - Two Phase Commit Over
-        this.messaging.sendAsync(
-            from,
-            Config.SERVER_ACK_PUBLICATION_MSG_NAME,
-            this.serializer.encode(new MsgAck(this.localServerId, timestamp))
-        );
-
-        System.out.println("Terminou 2PC.");
     }
 
     /**
@@ -343,14 +342,23 @@ public class Server implements AutoCloseable
 
         var firstPhase = askToVote(voteFuture,chirp,timestamp);
 
-        return firstPhase.thenRun(()->
+        return firstPhase.thenAccept(v ->
         {
-            askToCommit(ackFuture,timestamp,chirp).thenRun(()->
-            {
-                this.pendingChirps.remove(timestamp);
-                this.state.addChirp(this.localServerId, timestamp, chirp);
-                System.out.println("Terminou o 2PC.");
-            });
+
+            if (v.equals("Commit"))
+                askToCommit(ackFuture,timestamp).thenRun(()->
+                {
+                    this.pendingChirps.remove(timestamp);
+                    this.state.addChirp(this.localServerId, timestamp, chirp);
+                    System.out.println("Terminou o 2PC.");
+                });
+            else
+                {
+                    askToRollback(ackFuture,timestamp,chirp).thenRun(() ->
+                    {
+
+                    });
+                }
 
         });
 
@@ -361,7 +369,7 @@ public class Server implements AutoCloseable
         }); */
     }
 
-    public CompletableFuture< Void > askToVote(CompletableFuture< Void > voteFuture, String chirp, long timestamp)
+    public CompletableFuture< String > askToVote(CompletableFuture< Void > voteFuture, String chirp, long timestamp)
     {
         // Insert participants into Coordinator Log
 
@@ -388,23 +396,27 @@ public class Server implements AutoCloseable
                 .toArray(CompletableFuture[]::new)
         );
 
+        this.participantLog.add(msgchirp);
+        this.participantLog.add(new Prepared());
+
         // (when we sent all reqs and received all acks, ...)
 
         return sendFuture.thenAcceptBoth(voteFuture, (v1, v2) -> {
-
             System.out.println("Recebeu todos os Votos.");
-
-            this.participantLog.add(msgchirp);
-            this.participantLog.add(new Prepared());
-
+        })
+            .thenApply(v -> "Commit")
+            .exceptionally(v ->
+        {
+            System.out.println("Nao recebeu todos os Votos.");
+            return "Abort";
         });
     }
 
-    public CompletableFuture< Void > askToCommit(CompletableFuture< Void > ackFuture, long timestamp, String chirp)
+    public CompletableFuture< Void > askToCommit(CompletableFuture< Void > ackFuture, long chirpTimestamp)
     {
-        //this.coordinatorLog.add(new Commit());
+        this.coordinatorLog.add(new Commit());
 
-        final var commit = this.serializer.encode(new MsgCommit(this.localServerId,timestamp));
+        final var commit = this.serializer.encode(new MsgCommit(this.localServerId,chirpTimestamp));
 
         final var sendCommit = CompletableFuture.allOf(
             this.remoteServerAddresses
@@ -423,6 +435,11 @@ public class Server implements AutoCloseable
             System.out.println("Recebeu todos os ACK.");
             this.participantLog.add(new Commit());
         });
+    }
+
+    private CompletionStage< Void > askToRollback(CompletableFuture<Void> ackFuture, long timestamp, String chirp)
+    {
+        return CompletableFuture.completedFuture(null);
     }
 }
 
