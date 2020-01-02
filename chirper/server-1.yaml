@@ -1,5 +1,0 @@
-
-localServer: { id: 1, port: 7001 }
-
-remoteServers:
-    - { host: localhost, port: 7002, id: 2 }
