@@ -10,19 +10,19 @@ package chirper.shared;
 public class MsgRollback
 {
     public ServerId serverId;
-    public long chirpTimestamp;
+    public long timestamp;
     public int numRemove;
 
     /**
      * TODO: document
      *
-     * @param chirpTimestamp TODO: document
+     * @param timestamp TODO: document
      */
-    public MsgRollback(ServerId serverId, long chirpTimestamp, int numRemove)
+    public MsgRollback(ServerId serverId, long timestamp, int numRemove)
     {
         this.numRemove = numRemove;
         this.serverId = serverId;
-        this.chirpTimestamp = chirpTimestamp;
+        this.timestamp = timestamp;
     }
 }
 

@@ -12,17 +12,17 @@ import java.util.Objects;
 public class MsgAck
 {
     public ServerId serverId;
-    public long chirpTimestamp;
+    public long timestamp;
 
     /**
      * TODO: document
      *
-     * @param chirpTimestamp TODO: document
+     * @param timestamp TODO: document
      */
-    public MsgAck(ServerId serverId, long chirpTimestamp)
+    public MsgAck(ServerId serverId, long timestamp)
     {
         this.serverId = Objects.requireNonNull(serverId);
-        this.chirpTimestamp = chirpTimestamp;
+        this.timestamp = timestamp;
     }
 }
 

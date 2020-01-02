@@ -4,9 +4,9 @@ import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Serializer;
+import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -39,6 +39,77 @@ public class TwoPhaseCommit<T>
 
     private final Serializer serializer;
 
+    private int n_twopc = 0;
+
+    // participating
+    private Map<Pair<ServerId,Integer>,Participant> twopc;
+
+    // Coordinating
+    private class pendingTransaction
+    {
+        private final int numRemoteServers;
+        private int id;
+        private final Set< ServerId > ackedServerIds;
+        private final Set< ServerId > votedServerIds;
+        private final CompletableFuture< Void > onAllAcked;
+        private final CompletableFuture< Void > onAllVoted;
+
+        /**
+         * TODO: document
+         *
+         * @param numRemoteServers TODO: document
+         * @param onAllAcked TODO: document
+         */
+        public pendingTransaction
+        (
+            int numRemoteServers,
+            CompletableFuture< Void > onAllAcked,
+            CompletableFuture< Void > onAllVoted
+        )
+        {
+            this.numRemoteServers = numRemoteServers;
+            this.ackedServerIds = new HashSet<>();
+            this.votedServerIds = new HashSet<>();
+            this.onAllAcked = Objects.requireNonNull(onAllAcked);
+            this.onAllVoted = Objects.requireNonNull(onAllVoted);
+
+            checkAllVoted();
+            checkAllAcked();
+        }
+
+        public void serverVote(ServerId serverId)
+        {
+            if(!this.votedServerIds.contains(serverId))
+            {
+                this.votedServerIds.add(serverId);
+                checkAllVoted();
+            }
+        }
+
+        private void checkAllVoted()
+        {
+            if (this.votedServerIds.size() == this.numRemoteServers)
+            {
+                this.onAllVoted.complete(null);
+            }
+        }
+
+        public void ackServer(ServerId serverId)
+        {
+            this.ackedServerIds.add(serverId);
+
+            checkAllAcked();
+        }
+
+        private void checkAllAcked()
+        {
+            if (this.ackedServerIds.size() == this.numRemoteServers)
+            {
+                this.onAllAcked.complete(null);
+            }
+        }
+    }
+
     public TwoPhaseCommit(
         ServerId localServerId,
         List< ServerIdAddress > remoteServerAddressesAndIds,
@@ -52,10 +123,12 @@ public class TwoPhaseCommit<T>
         this.remoteServerAdressesAndIds = remoteServerAddressesAndIds;
 
         this.serializer = Serializer.builder()
-                .withTypes(type,MsgAck.class, ServerId.class, MsgCommit.class, MsgRollback.class) // Vai faltar o T
+                .withTypes(type,MsgAck.class, ServerId.class, MsgCommit.class, MsgRollback.class)
                 .build();
 
         this.messaging = messaging;
+
+        this.twopc = new HashMap<>();
 
         final var exec = Executors.newFixedThreadPool(1);
 
@@ -80,7 +153,7 @@ public class TwoPhaseCommit<T>
     {
         final var msg = this.serializer.< MsgCommit >decode(payload);
 
-        //this.participantRole.get(msg.timestamp).setDecision(msg);
+        this.twopc.get(msg.timestamp).setDecision(msg);
     }
 
     private void handleServerRollback(Address from, byte[] payload)
@@ -127,6 +200,7 @@ public class TwoPhaseCommit<T>
 
     public CompletableFuture< Boolean > put(T value)
     {
+        this.n_twopc++;
 
         return CompletableFuture.completedFuture(null);
     }
