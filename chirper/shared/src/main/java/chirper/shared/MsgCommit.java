@@ -11,16 +11,17 @@ import java.util.Objects;
  */
 public class MsgCommit extends Msg
 {
-    public ServerId serverId;
-    public long id;
+    //public ServerId serverId;
+    //public long id;
 
     /**
      * TODO: document
      */
     public MsgCommit(ServerId serverId, long id)
     {
-        this.serverId = Objects.requireNonNull(serverId);
-        this.id = id;
+        super(serverId,id);
+        //this.serverId = Objects.requireNonNull(serverId);
+        //this.id = id;
     }
 }
 
