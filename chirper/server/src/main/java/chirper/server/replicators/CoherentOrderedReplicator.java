@@ -1,6 +1,7 @@
 package chirper.server.replicators;
 
 import chirper.server.network.ServerId;
+import chirper.server.network.ServerNetwork;
 import chirper.shared.Config;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.utils.net.Address;
@@ -10,6 +11,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 /**
  * Implements 2PC for committing arbitrary objects, and thus handles all
@@ -31,13 +33,7 @@ import java.util.concurrent.Executors;
 
 public class CoherentOrderedReplicator<T> extends Replicator<T>
 {
-    private final ServerId localServerId;
-
-    private final List < ServerIdAddress > remoteServerAddressesAndIds;
-
-    private final ManagedMessagingService messaging;
-
-    private final Serializer serializer;
+    private final ServerNetwork serverNetwork;
 
     private long n_twopc = 0;
 
@@ -125,87 +121,104 @@ public class CoherentOrderedReplicator<T> extends Replicator<T>
             this.serverid = serverId;
             this.twopc_id = twopc_id;
         }
+
+        public ServerId getServerid()
+        {
+            return this.serverid;
+        }
+
+        public long getTwopc_id()
+        {
+            return this.twopc_id;
+        }
+        @Override
+        public boolean equals(Object obj)
+        {
+            return
+                obj != null &&
+                    this.getClass() == obj.getClass() &&
+                    this.serverid.equals(((pair)obj).getServerid()) &&
+                    this.twopc_id == ((pair)obj).getTwopc_id();
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Objects.hash(this.serverid.getValue(),twopc_id);
+        }
     }
 
     public CoherentOrderedReplicator(
-        int localServerId,
-        Collection<chirper.server.ServerIdAddress> remoteServerAddressesAndIds,
-        ManagedMessagingService messaging,
-        /*Consumer<T> onValueCommitted,*/
-        Class<chirper.server.MsgChirp> type
+        ServerNetwork serverNetwork,
+        Consumer<T> onValueCommitted,
+        Class<T> type
     )
     {
-        this.localServerId = new ServerId(localServerId);
+        super(serverNetwork,onValueCommitted);
 
-        this.remoteServerAddressesAndIds = remoteServerAddressesAndIds;
-
-        this.serializer = Serializer.builder()
-                .withTypes(type,
-                           MsgAck.class, ServerId.class, MsgCommit.class, MsgRollback.class,
-                           MsgPrepare.class)
-                .build();
-
-        this.messaging = messaging;
+        this.serverNetwork = serverNetwork;
 
         this.participating = new HashMap<>();
 
         this.coordinating = new HashMap<>();
 
-        this.coordinatorLog = new Log("coordinator",this.localServerId.getValue(),type);
+        this.coordinatorLog = new Log("coordinator",serverNetwork.getLocalServerId().getValue(),type);
 
-        this.participantLog = new Log("participant",this.localServerId.getValue(),type);
+        this.participantLog = new Log("participant",serverNetwork.getLocalServerId().getValue(),type);
 
-        final var exec = Executors.newFixedThreadPool(1);
+        serverNetwork.registerPayloadType(MsgAck.class);
 
-        this.messaging.registerHandler(
-            Config.SERVER_ACK_PUBLICATION_MSG_NAME, this::handleServerAck, exec
-        );
+        serverNetwork.registerPayloadType(MsgCommit.class);
 
-        this.messaging.registerHandler(
-                Config.SERVER_VOTE_OK_MSG_NAME, this::handleServerOk, exec
-        );
+        serverNetwork.registerPayloadType(MsgPrepare.class);
 
-        this.messaging.registerHandler(
-                Config.SERVER_COMMIT_PUBLICATION_MSG_NAME, this::handleServerCommit, exec
-        );
+        serverNetwork.registerPayloadType(MsgRollback.class);
 
-        this.messaging.registerHandler(
-                Config.SERVER_ROLLBACK_PUBLICATION_MSG_NAME, this::handleServerRollback, exec
-        );
+        serverNetwork.registerPayloadType(ServerId.class);
+
+        serverNetwork.registerHandler(Config.SERVER_PUBLISH_MSG_NAME,this::handleServerPublish);
+
+        serverNetwork.registerHandler(Config.SERVER_ACK_PUBLICATION_MSG_NAME, this::handleServerAck);
+
+        serverNetwork.registerHandler(Config.SERVER_VOTE_OK_MSG_NAME, this::handleServerOk);
+
+        serverNetwork.registerHandler(Config.SERVER_COMMIT_PUBLICATION_MSG_NAME, this::handleServerCommit);
+
+        serverNetwork.registerHandler(Config.SERVER_ROLLBACK_PUBLICATION_MSG_NAME, this::handleServerRollback);
     }
 
-    private void handleServerCommit(Address from, byte[] payload)
+    private void handleServerCommit(ServerId serverId, MsgCommit value)
     {
-        final var msg = this.serializer.< MsgCommit >decode(payload);
-
-        this.participating.get(msg.twopc_id).setDecision(msg);
+       // this.getOnValueCommitted().accept(value);
+        this.participating.get(new pair(value.serverId,value.twopc_id)).setDecision(value);
     }
 
-    private void handleServerRollback(Address from, byte[] payload)
+    private void handleServerRollback(ServerId serverId, MsgRollback value)
     {
-        final var msg = this.serializer.< MsgRollback >decode(payload);
+        //final var msg = this.serializer.< MsgRollback >decode(payload);
 
-        this.participating.get(msg.twopc_id).setDecision(msg);
+        this.participating.get(new pair(serverId,value.twopc_id)).setDecision(value);
     }
 
-    private void handleServerAck(Address from, byte[] payload)
+    private void handleServerAck(ServerId serverId, MsgAck value)
     {
-        final var msg = this.serializer.< MsgAck >decode(payload);
+        // final var msg = this.serializer.< MsgAck >decode(value);
 
-        this.coordinating.get(msg.twopc_id).ackServer(msg.serverId);
+        this.coordinating.get(value.twopc_id).ackServer(value.serverId);
     }
 
-    private void handleServerOk(Address from, byte[] payload)
+    private void handleServerOk(ServerId serverId, MsgAck value)
     {
-        final var msg = this.serializer.< MsgAck >decode(payload);
+        // final var msg = this.serializer.< MsgAck >decode(payload);
 
-        this.coordinating.get(msg.twopc_id).serverVote(msg.serverId);
+        this.coordinating.get(value.twopc_id).serverVote(value.serverId);
     }
 
-    private void handleServerPublish(Address from, byte[] payload)
+    private void handleServerPublish(ServerId serverId, MsgPrepare value)
     {
 
-        final var msg = this.serializer.<MsgPrepare>decode(payload);
+        //final var msg = this.serializer.<MsgPrepare>decode(payload);
+
         // "synchronize" and tick clock
 
         //this.clock = Math.max(this.clock, msg.timestamp) + 1;
@@ -214,11 +227,11 @@ public class CoherentOrderedReplicator<T> extends Replicator<T>
 
         // prepare
 
-        var decision = prepareCommit(msg);
+        var decision = prepareCommit(value);
 
         // Vote and wait for outcome, Coordinator decision
 
-        waitOutcome(decision,from,msg.twopc_id);
+        waitOutcome(decision,serverId,value.twopc_id);
 
     }
 
@@ -231,7 +244,7 @@ public class CoherentOrderedReplicator<T> extends Replicator<T>
     {
         var decision = new CompletableFuture< Void >();
 
-        var participant = new Participant(decision,participantLog,msg);
+        var participant = new Participant(decision,participantLog,msg.content);
 
         this.participating.put(new pair(msg.serverId,msg.twopc_id),participant);
 
@@ -243,29 +256,29 @@ public class CoherentOrderedReplicator<T> extends Replicator<T>
     /**
      * Wait for the outcome of the the two phase commit.
      * @param decision
-     * @param from
+     * @param serverId
      * @param twopc_id
      */
     private void waitOutcome(
         CompletableFuture< Void > decision,
-        Address from,
+        ServerId serverId,
         long twopc_id
     )
     {
-
+         System.out.println("Waiting for Outcome");
         // send acknowledgment, Vote OK - First phase answer
 
-        this.messaging.sendAsync(
-            from,
+        this.serverNetwork.send(
+            serverId,
             Config.SERVER_VOTE_OK_MSG_NAME,
-            this.serializer.encode(new MsgAck(this.localServerId, twopc_id))
+            new MsgAck(this.serverNetwork.getLocalServerId(), twopc_id)
+            //this.serializer.encode(new MsgAck(this.localServerId, twopc_id))
         );
 
         decision.thenAccept(v ->
             {
-
                 // Act according to decision made by the Coordinator
-                var participant = this.participating.get(twopc_id);
+                var participant = this.participating.get(new pair(serverId,twopc_id));
 
                 var action = participant.getDecision();
 
@@ -278,17 +291,17 @@ public class CoherentOrderedReplicator<T> extends Replicator<T>
                     //this.state.addChirp(msg.serverId, msg.timestamp, msg.text);
 
                     participant.commit();
-
                 }
                 else {
                     participant.beginRollBack();
                 }
 
                 // send acknowledgment - Two Phase Commit Over
-                this.messaging.sendAsync(
-                    from,
+                this.serverNetwork.send(
+                    serverId,
                     Config.SERVER_ACK_PUBLICATION_MSG_NAME,
-                    this.serializer.encode(new MsgAck(this.localServerId, twopc_id))
+                    new MsgAck(this.serverNetwork.getLocalServerId(), twopc_id)
+                    //this.serializer.encode(new MsgAck(this.localServerId, twopc_id))
                 );
 
                 System.out.println("Terminou 2PC.");
@@ -297,34 +310,27 @@ public class CoherentOrderedReplicator<T> extends Replicator<T>
 
     }
 
-    public CompletableFuture< String > askToVote(CompletableFuture< Void > voteFuture, T value, long id)
+    public CompletableFuture< String > askToVote(CompletableFuture< Void > voteFuture, T value, long twopc_id)
     {
         // Insert participants into Coordinator Log
 
-        coordinatorLog.add(this.remoteServerAddressesAndIds);
+        //coordinatorLog.add(this.serverNetwork.getRemoteServerIds()); // Nao funciona a leitura do log depois
 
         // send chirp to servers
 
-        //var msgchirp = new MsgChirp(this.localServerId, id, chirp);
-
-        final var payload = this.serializer.encode(
-            value
-        );
+        var msg = new MsgPrepare<T>(this.serverNetwork.getLocalServerId(), twopc_id, value);
 
         System.out.println("Starting First phase of the 2PC");
 
         final var sendFuture = CompletableFuture.allOf(
-            this.remoteServerAddressesAndIds
+            this.serverNetwork.getRemoteServerIds()
                 .stream()
                 .map(
-                    serverIdAddress -> this.messaging.sendAsync(
-                        serverIdAddress.ad, Config.SERVER_PUBLISH_MSG_NAME, payload
-                    )
+                    serverId -> this.getServerNetwork().send(
+                        serverId, Config.SERVER_PUBLISH_MSG_NAME, msg) // MsgPrepare
                 )
                 .toArray(CompletableFuture[]::new)
         );
-
-
 
         // (when we sent all reqs and received all acks, ...)
 
@@ -341,18 +347,20 @@ public class CoherentOrderedReplicator<T> extends Replicator<T>
             });
     }
 
-    public CompletableFuture< Void > askToCommit(CompletableFuture< Void > ackFuture, long chirpTimestamp)
+    public CompletableFuture< Void > askToCommit(CompletableFuture< Void > ackFuture, long twopc_id)
     {
         this.coordinatorLog.add(new Commit());
 
-        final var commit = this.serializer.encode(new MsgCommit(this.localServerId,chirpTimestamp));
+        //final var commit = this.serializer.encode(new MsgCommit(this.localServerId,chirpTimestamp));
+
+        final var commit =new MsgCommit(this.serverNetwork.getLocalServerId(),twopc_id);
 
         final var sendCommit = CompletableFuture.allOf(
-            this.remoteServerAddressesAndIds
+            this.serverNetwork.getRemoteServerIds()
                 .stream()
                 .map(
-                    serverIdAddress -> this.messaging.sendAsync(
-                        serverIdAddress.ad, Config.SERVER_COMMIT_PUBLICATION_MSG_NAME, commit
+                    serverId -> this.getServerNetwork().send(
+                        serverId, Config.SERVER_COMMIT_PUBLICATION_MSG_NAME, commit
                     )
                 )
                 .toArray(CompletableFuture[]::new)
@@ -366,18 +374,20 @@ public class CoherentOrderedReplicator<T> extends Replicator<T>
         });
     }
 
-    private CompletionStage< Void > askToRollback(CompletableFuture<Void> ackFuture, long timestamp, T value)
+    private CompletionStage< Void > askToRollback(CompletableFuture<Void> ackFuture, long twopc_id, T value)
     {
         this.coordinatorLog.add(new Abort());
 
-        final var abort = this.serializer.encode(new MsgRollback(this.localServerId,timestamp,2));
+        //final var abort = this.serializer.encode(new MsgRollback(this.localServerId,timestamp,2));
+
+        final var abort = new MsgRollback(this.serverNetwork.getLocalServerId(),twopc_id,2);
 
         final var sendCommit = CompletableFuture.allOf(
-            this.remoteServerAddressesAndIds
+            this.serverNetwork.getRemoteServerIds()
                 .stream()
                 .map(
-                    serverIdAddress -> this.messaging.sendAsync(
-                        serverIdAddress.ad, Config.SERVER_ROLLBACK_PUBLICATION_MSG_NAME, abort
+                    serverId -> this.getServerNetwork().send(
+                        serverId, Config.SERVER_ROLLBACK_PUBLICATION_MSG_NAME, abort
                     )
                 )
                 .toArray(CompletableFuture[]::new)
@@ -391,6 +401,7 @@ public class CoherentOrderedReplicator<T> extends Replicator<T>
         });
     }
 
+    @Override
     public CompletableFuture< Boolean > put(T value)
     {
         final var id = this.n_twopc++;
@@ -403,7 +414,7 @@ public class CoherentOrderedReplicator<T> extends Replicator<T>
 
         this.coordinating.put(
             id,
-            new pendingTransaction(this.remoteServerAddressesAndIds.size(), ackFuture, voteFuture)
+            new pendingTransaction(this.serverNetwork.getRemoteServerIds().size(), ackFuture, voteFuture)
         );
 
         var firstPhase = askToVote(voteFuture,value,id);

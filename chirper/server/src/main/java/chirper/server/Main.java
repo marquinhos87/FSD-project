@@ -2,7 +2,7 @@
 
 package chirper.server;
 
-import chirper.server.prev.Server;
+
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -42,17 +42,21 @@ public class Main
 
             // run server
 
-            try (final var server = new Server(config))
-            {
-                server.start();
+            try {
+                try (final var server = new Server(config))
+                {
+                    server.start();
 
-                out.println("Running, press ENTER to exit... ");
-                out.flush();
+                    out.println("Running, press ENTER to exit... ");
+                    out.flush();
 
-                in.readLine();
+                    in.readLine();
 
-                out.println("Exiting...");
-                out.flush();
+                    out.println("Exiting...");
+                    out.flush();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }

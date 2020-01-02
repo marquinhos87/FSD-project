@@ -1,5 +1,6 @@
 package chirper.server.replicators;
 
+import chirper.server.network.ServerId;
 import io.atomix.storage.journal.SegmentedJournal;
 import io.atomix.storage.journal.SegmentedJournalReader;
 import io.atomix.storage.journal.SegmentedJournalWriter;

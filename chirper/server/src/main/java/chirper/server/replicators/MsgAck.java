@@ -4,6 +4,8 @@ package chirper.server.replicators;
 
 /* -------------------------------------------------------------------------- */
 
+import chirper.server.network.ServerId;
+
 /**
  * TODO: document
  */

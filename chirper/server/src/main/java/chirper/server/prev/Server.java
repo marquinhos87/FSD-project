@@ -1,15 +1,11 @@
 /* -------------------------------------------------------------------------- */
 
-package chirper.server.prev;
+/*package chirper.server.prev;
 
 import chirper.server.ServerConfig;
 import chirper.server.network.ServerId;
-import chirper.server.replicators.MsgAck;
-import chirper.server.replicators.MsgCommit;
-import chirper.server.replicators.MsgRollback;
-import chirper.server.replicators.Participant;
+import chirper.server.replicators.*;
 import chirper.shared.Config;
-import chirper.server.replicators.CoherentOrderedReplicator;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
@@ -24,7 +20,7 @@ import java.util.concurrent.*;
 /**
  * TODO: document
  */
-public class Server implements AutoCloseable
+/*public class Server implements AutoCloseable
 {
     // the identifier of this server
     private final ServerId localServerId;
@@ -32,7 +28,7 @@ public class Server implements AutoCloseable
     // the addresses of all remote servers
     private final Set< Address > remoteServerAddresses;
 
-    private final List< ServerIdAddress > remoteServerIdsAddresses;
+    //private final List< ServerIdAddress > remoteServerIdsAddresses;
 
     // the messaging service
     private final ManagedMessagingService messaging;
@@ -59,14 +55,14 @@ public class Server implements AutoCloseable
     //private final Coordinator coordinator;
     private final Log coordinatorLog;
     // TODO: document
-    private final Log participantLog;
+    private final Log participantLog;*/
 
     /**
      * TODO: document
      *
      * @param config TODO: document
      */
-    public Server(ServerConfig config)
+    /*public Server(ServerConfig config)
     {
         this(
             config.getLocalServerId(),
@@ -74,7 +70,7 @@ public class Server implements AutoCloseable
             config.getRemoteServerAddresses(),
             config.getRemoteServerIdsAddresses()
         );
-    }
+    }*/
 
     /**
      * TODO: document
@@ -84,7 +80,7 @@ public class Server implements AutoCloseable
      * @param remoteServerAddresses all remote server identifiers keyed by their
      *     addresses
      */
-    public Server(
+    /*public Server(
         ServerId localServerId,
         int localServerPort,
         Collection< Address > remoteServerAddresses,
@@ -154,20 +150,20 @@ public class Server implements AutoCloseable
         this.messaging.registerHandler(
             Config.SERVER_ROLLBACK_PUBLICATION_MSG_NAME, this::handleServerRollback, exec
         );
-    }
+    }*/
 
     /**
      * TODO: document
      */
-    public void start()
+    /*public void start()
     {
         this.messaging.start().join();
-    }
+    }*/
 
     /**
      * TODO: document
      */
-    @Override
+    /*@Override
     public void close()
     {
         this.messaging.stop().join();
@@ -198,13 +194,13 @@ public class Server implements AutoCloseable
                 .thenApply(v -> null)
                 .exceptionally(Throwable::getMessage)
                 .thenApply(this.serializer::encode);
-    }
+    }*/
 
     /**
      * Participants get to know of a new Chirp and are asked to prepare by the Coordinator.
      * Start of the Two Phase Commit.
      */
-    private void handleServerPublish(Address from, byte[] payload)
+    /*private void handleServerPublish(Address from, byte[] payload)
     {
 
         final var msg = this.serializer.< MsgChirp >decode(payload);
@@ -223,7 +219,7 @@ public class Server implements AutoCloseable
 
         waitOutcome(decision,from,msg.timestamp);
 
-    }
+    }*/
 
     /**
      * Wait for the outcome of the the two phase commit.
@@ -231,7 +227,7 @@ public class Server implements AutoCloseable
      * @param from
      * @param timestamp
      */
-    private void waitOutcome(
+    /*private void waitOutcome(
         CompletableFuture< Void > decision,
         Address from,
         long timestamp
@@ -280,14 +276,14 @@ public class Server implements AutoCloseable
         }
         );
 
-    }
+    }*/
 
     /**
      * Prepare the log for the new chirp.
      * @param msg
      * @return
      */
-    private CompletableFuture< Void > prepareCommit(MsgChirp msg)
+    /*private CompletableFuture< Void > prepareCommit(MsgChirp msg)
     {
         var decision = new CompletableFuture< Void >();
 
@@ -326,7 +322,7 @@ public class Server implements AutoCloseable
         final var msg = this.serializer.< MsgAck >decode(payload);
 
         this.pendingChirps.get(msg.timestamp).serverVote(msg.serverId);
-    }
+    }*/
 
     /**
      * Publishes the given chirp, which should have been received from a
@@ -340,7 +336,7 @@ public class Server implements AutoCloseable
      *
      * @return a future that is completed when all servers acknowledge the chirp
      */
-    private CompletableFuture< Void > publishChirp(String chirp)
+    /*private CompletableFuture< Void > publishChirp(String chirp)
     {
         System.out.println("About to Start publishing Chirp...");
 
@@ -348,7 +344,7 @@ public class Server implements AutoCloseable
 
         var msgchirp = new MsgChirp(localServerId,timestamp,chirp);
 
-        return twopc.put(msgchirp);
+        return twopc.put(msgchirp);*/
 
         /*
         // 2 Completables, 1 for the Server Votes (Phase 1) and 1 for the Acks (Phase 2)
@@ -390,7 +386,7 @@ public class Server implements AutoCloseable
             this.pendingChirps.remove(timestamp);
             this.state.addChirp(this.localServerId, timestamp, chirp);
         }); */
-    }
+    /*}
 
     public CompletableFuture< String > askToVote(CompletableFuture< Void > voteFuture, String chirp, long timestamp)
     {
@@ -485,6 +481,6 @@ public class Server implements AutoCloseable
             this.participantLog.add(new Abort());
         });
     }
-}
+}*/
 
 /* -------------------------------------------------------------------------- */

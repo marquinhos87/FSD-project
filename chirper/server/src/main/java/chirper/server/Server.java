@@ -3,6 +3,7 @@ package chirper.server;
 import chirper.server.network.Network;
 import chirper.server.network.ServerId;
 import chirper.server.network.ServerNetwork;
+import chirper.server.replicators.CoherentOrderedReplicator;
 import chirper.server.replicators.Replicator;
 import chirper.server.replicators.UnorderedReplicator;
 import chirper.shared.Config;
@@ -46,10 +47,10 @@ public class Server implements AutoCloseable
             remoteServerAddressesById
         );
 
-        this.replicator = new UnorderedReplicator<>(
+        this.replicator = new CoherentOrderedReplicator<>(
             serverNetwork,
-            String.class,
-            this::onChirpCommitted
+            this::onChirpCommitted,
+            String.class
         );
 
         this.chirpStore = new ChirpStore();
