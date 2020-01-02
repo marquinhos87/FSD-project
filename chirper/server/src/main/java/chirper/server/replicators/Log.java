@@ -23,7 +23,7 @@ public class Log<T> {
         this.s = Serializer.builder().withTypes(type, Prepared.class, Commit.class, ServerId.class,
             Address.class, Set.class).build();
 
-        this.sj =  SegmentedJournal.<Object>builder()
+        this.sj =  SegmentedJournal.builder()
             .withName(name+id)
             .withSerializer(s)
             .build();
