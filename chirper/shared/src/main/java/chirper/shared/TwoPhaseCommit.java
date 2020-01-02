@@ -31,7 +31,7 @@ public class TwoPhaseCommit<T>
 
     }
 
-    public CompletableFuture< Void > put(T value)
+    public CompletableFuture< Boolean > put(T value)
     {
 
     }
