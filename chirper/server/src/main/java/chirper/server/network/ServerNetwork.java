@@ -1,4 +1,4 @@
-package chirper.server.things;
+package chirper.server.network;
 
 import chirper.server.ServerId;
 import io.atomix.utils.net.Address;

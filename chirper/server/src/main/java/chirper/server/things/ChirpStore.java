@@ -1,3 +1,5 @@
+/* -------------------------------------------------------------------------- */
+
 package chirper.server.things;
 
 import chirper.shared.Config;
@@ -11,12 +13,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Just a simple persistent chirp store.
- *
- * Add chirps with appendChirp(). The chirps end up having the same order as the
- * order in which appendChirp() is invoked.
- */
+/* -------------------------------------------------------------------------- */
+
 public class ChirpStore
 {
     // all chirps in reverse global total order
@@ -25,6 +23,11 @@ public class ChirpStore
     public ChirpStore()
     {
         this.chirps = new LinkedList<>();
+    }
+
+    public void addChirp(String chirpText)
+    {
+        this.chirps.addFirst(chirpText);
     }
 
     public List< String > getLatestChirps(CharSequence[] topics)
@@ -60,9 +63,6 @@ public class ChirpStore
 
         return Collections.unmodifiableList(latestChirps);
     }
-
-    public void appendChirp(String chirp)
-    {
-        this.chirps.addFirst(chirp);
-    }
 }
+
+/* -------------------------------------------------------------------------- */

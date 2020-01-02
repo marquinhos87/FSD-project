@@ -12,7 +12,6 @@ import io.atomix.utils.serializer.Serializer;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.function.Consumer;
 
 /* -------------------------------------------------------------------------- */
 
