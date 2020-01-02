@@ -21,7 +21,8 @@ import java.util.function.Consumer;
 public class TwoPhaseCommit<T>
 {
     public TwoPhaseCommit(
-        List< ServerIdAddress > peers,
+        ServerId localServerId,
+        List< ServerIdAddress > remoteServerAddressesAndIds,
         Consumer<T> onValueCommitted
     )
     {
