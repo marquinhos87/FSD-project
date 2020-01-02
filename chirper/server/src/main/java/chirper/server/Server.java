@@ -109,7 +109,7 @@ public class Server implements AutoCloseable
 
         this.participantRole = new HashMap<>();
 
-        this.twopc = new TwoPhaseCommit<MsgChirp>(this.localServerId,this.remoteServerIdsAddresses,this.messaging, ,MsgChirp.class);
+        this.twopc = new TwoPhaseCommit<MsgChirp>(localServerId.getValue(),remoteServerIdsAddresses,this.messaging,MsgChirp.class);
 
         this.coordinatorLog = new Log("coordinator",this.localServerId.getValue());
 
@@ -342,8 +342,9 @@ public class Server implements AutoCloseable
 
         var msgchirp = new MsgChirp(localServerId,timestamp,chirp);
 
-        twopc.put(msgchirp);
+        return twopc.put(msgchirp);
 
+        /*
         // 2 Completables, 1 for the Server Votes (Phase 1) and 1 for the Acks (Phase 2)
 
         var voteFuture = new CompletableFuture< Void >();
@@ -376,7 +377,7 @@ public class Server implements AutoCloseable
                     });
                 }
 
-        });
+        });*/
 
         /*
         return sendFuture.thenAcceptBoth(ackFuture, (v1, v2) -> {

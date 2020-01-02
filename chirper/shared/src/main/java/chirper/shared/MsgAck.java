@@ -9,20 +9,16 @@ import java.util.Objects;
 /**
  * TODO: document
  */
-public class MsgAck
+public class MsgAck extends Msg
 {
-    public ServerId serverId;
-    public long timestamp;
-
     /**
      * TODO: document
      *
-     * @param timestamp TODO: document
+     * @param twopc_id TODO: document
      */
-    public MsgAck(ServerId serverId, long timestamp)
+    public MsgAck(ServerId serverId, long twopc_id)
     {
-        this.serverId = Objects.requireNonNull(serverId);
-        this.timestamp = timestamp;
+        super(serverId,twopc_id);
     }
 }
 

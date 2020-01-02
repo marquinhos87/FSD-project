@@ -7,22 +7,19 @@ package chirper.shared;
 /**
  * TODO: document
  */
-public class MsgRollback
+public class MsgRollback extends Msg
 {
-    public ServerId serverId;
-    public long timestamp;
     public int numRemove;
 
     /**
      * TODO: document
      *
-     * @param timestamp TODO: document
+     * @param twopc_id TODO: document
      */
-    public MsgRollback(ServerId serverId, long timestamp, int numRemove)
+    public MsgRollback(ServerId serverId, long twopc_id, int numRemove)
     {
+        super(serverId,twopc_id);
         this.numRemove = numRemove;
-        this.serverId = serverId;
-        this.timestamp = timestamp;
     }
 }
 
