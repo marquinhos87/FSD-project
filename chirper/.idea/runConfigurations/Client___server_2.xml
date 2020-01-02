@@ -3,6 +3,7 @@
     <option name="MAIN_CLASS_NAME" value="chirper.client.Main" />
     <module name="client" />
     <option name="PROGRAM_PARAMETERS" value="localhost:7002" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="chirper.client.*" />

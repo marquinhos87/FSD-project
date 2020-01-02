@@ -2,7 +2,8 @@
   <configuration default="false" name="Server 1 (standalone)" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="chirper.server.Main" />
     <module name="server" />
-    <option name="PROGRAM_PARAMETERS" value="server-standalone.yaml" />
+    <option name="PROGRAM_PARAMETERS" value="server-configs/server-1-standalone.yaml" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="chirper.client.*" />
