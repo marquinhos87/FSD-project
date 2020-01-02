@@ -319,7 +319,7 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
     }
 
     @Override
-    public CompletableFuture< Boolean > put(T value)
+    public CompletableFuture< Boolean > broadcast(T value)
     {
         final var id = this.n_twopc++;
 

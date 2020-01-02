@@ -37,7 +37,7 @@ public abstract class Broadcaster<T>
         this.onMessageReceived = Objects.requireNonNull(onMessageReceived);
     }
 
-    public abstract CompletableFuture< Boolean > put(T value);
+    public abstract CompletableFuture< Boolean > broadcast(T value);
 
     protected ServerNetwork getServerNetwork()
     {

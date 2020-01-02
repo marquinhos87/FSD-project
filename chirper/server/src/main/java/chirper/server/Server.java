@@ -97,7 +97,7 @@ public class Server implements AutoCloseable
     {
         return
             this.broadcaster
-                .put(chirp)
+                .broadcast(chirp)
                 .thenApply(success -> success ? null : "Error");
     }
 
