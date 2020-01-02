@@ -15,6 +15,7 @@ import java.util.concurrent.CompletableFuture;
 public class PendingChirp
 {
     private final int numRemoteServers;
+
     private final Set< ServerId > ackedServerIds;
     private final Set< ServerId > votedServerIds;
     private final CompletableFuture< Void > onAllAcked;

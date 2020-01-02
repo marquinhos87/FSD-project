@@ -44,6 +44,9 @@ public class Server implements AutoCloseable
     // Participant instance for a Two Phase Commit iteration
     private final Map< Long, Participant > participantRole;
 
+    // all current instances of Two Phase Commits
+    private final TwoPhaseCommit twopc;
+
     // TODO: document
     private final State state;
 
@@ -106,6 +109,8 @@ public class Server implements AutoCloseable
         this.pendingChirps = new HashMap<>();
 
         this.participantRole = new HashMap<>();
+
+        this.twopc = new TwoPhaseCommit<MsgChirp>(this.localServerId,this.remoteServerIdsAddresses,this.messaging, ,MsgChirp.class);
 
         this.coordinatorLog = new Log("coordinator",this.localServerId.getValue());
 
@@ -332,15 +337,13 @@ public class Server implements AutoCloseable
      */
     private CompletableFuture< Void > publishChirp(String chirp)
     {
-        final var timestamp = this.clock++;
-
         System.out.println("About to Start publishing Chirp...");
+
+        final var timestamp = this.clock++;
 
         var msgchirp = new MsgChirp(localServerId,timestamp,chirp);
 
-        Consumer<MsgChirp> a = msgchirp ->
-
-        final var twopc = new TwoPhaseCommit<MsgChirp>(localServerId,remoteServerIdsAddresses,  ).put(msgchirp);
+        twopc.put(msgchirp);
 
         // 2 Completables, 1 for the Server Votes (Phase 1) and 1 for the Acks (Phase 2)
 
