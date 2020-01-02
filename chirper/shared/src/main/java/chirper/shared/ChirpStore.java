@@ -1,5 +1,9 @@
 package chirper.shared;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+
 /**
  * Just a simple persistent chirp store.
  *
@@ -13,7 +17,19 @@ public class ChirpStore
 
     }
 
-    public void appendChirp(Chirp chirp)
+    public List< String > getLatestChirps(CharSequence[] topics)
+    {
+        return this.getLatestChirps(Arrays.asList(topics));
+    }
+
+    public List< String > getLatestChirps(
+        Collection< ? extends CharSequence > topics
+    )
+    {
+
+    }
+
+    public void appendChirp(String chirp)
     {
 
     }
