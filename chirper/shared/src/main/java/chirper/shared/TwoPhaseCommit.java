@@ -8,13 +8,15 @@ import java.util.function.Consumer;
  * inter-server communication.
  *
  * Call put() to run an instance of 2PC; the returned future completes
- * successfully if 2PC commits and exceptionally if 2PC aborts. But do not take
- * the value as committed when this future completes successfully!
+ * successfully with true if 2PC commits, successfully with false if 2PC aborts,
+ * and exceptionally if the onValueCommitted callback throws an exception.
  *
- * Wait for the onValueCommitted callback instead. This is called for any 2PC
- * that commits, be it coordinated by the local server or by another server.
- * Also, the callback is called for each committed value in the same order in
- * all servers.
+ * Note that the future returned by put() only completes after the
+ * onValueCommitted callback is run locally for the value passed to put().
+ *
+ * The onValueCommitted callback is called for any 2PC that commits, be it
+ * coordinated by the local server or by another server. Also, the callback is
+ * called for each committed value in the same order in all servers.
  *
  * @param <T> the type of things to be committed
  */
