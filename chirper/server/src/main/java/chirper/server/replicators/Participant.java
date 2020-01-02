@@ -1,28 +1,28 @@
-package chirper.server;
+package chirper.server.replicators;
 
 import java.util.concurrent.CompletableFuture;
 
-public class Participant {
+public class Participant<T> {
 
     private Msg decision = null;
 
     private final Log log;
 
-    private final MsgChirp chirp;
+    private final T thing;
 
     private final CompletableFuture< Void > pendingDecision;
 
     public Participant(
         CompletableFuture< Void > pendingDecision,
         Log log,
-        MsgChirp chirp
+        T chirp
     )
     {
         this.pendingDecision = pendingDecision;
         this.log = log;
-        this.chirp = chirp;
+        this.thing = chirp;
 
-        log.add(this.chirp);
+        log.add(this.thing);
 
         checkDecision();
     }
@@ -39,9 +39,9 @@ public class Participant {
         checkDecision();
     }
 
-    public MsgChirp getMsgChirp()
+    public T getMsgChirp()
     {
-        return this.chirp;
+        return this.thing;
     }
 
     public Msg getDecision()

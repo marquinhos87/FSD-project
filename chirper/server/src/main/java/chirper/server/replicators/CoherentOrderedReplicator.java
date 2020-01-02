@@ -1,7 +1,8 @@
-package chirper.shared;
+package chirper.server.replicators;
 
+import chirper.server.network.ServerId;
+import chirper.shared.Config;
 import io.atomix.cluster.messaging.ManagedMessagingService;
-import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Serializer;
 
@@ -9,7 +10,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executors;
-import java.util.function.Consumer;
 
 /**
  * Implements 2PC for committing arbitrary objects, and thus handles all
@@ -29,7 +29,7 @@ import java.util.function.Consumer;
  * @param <T> the type of things to be committed
  */
 
-public class TwoPhaseCommit<T>
+public class CoherentOrderedReplicator<T> extends Replicator<T>
 {
     private final ServerId localServerId;
 
@@ -45,7 +45,7 @@ public class TwoPhaseCommit<T>
     private Log participantLog;
 
     // participating
-    private Map<pair,Participant> participating;
+    private Map<pair, Participant > participating;
 
     // Coordinating
     private Map<Long,pendingTransaction> coordinating;
@@ -127,7 +127,7 @@ public class TwoPhaseCommit<T>
         }
     }
 
-    public TwoPhaseCommit(
+    public CoherentOrderedReplicator(
         int localServerId,
         Collection<chirper.server.ServerIdAddress> remoteServerAddressesAndIds,
         ManagedMessagingService messaging,
@@ -140,7 +140,9 @@ public class TwoPhaseCommit<T>
         this.remoteServerAddressesAndIds = remoteServerAddressesAndIds;
 
         this.serializer = Serializer.builder()
-                .withTypes(type,MsgAck.class, ServerId.class, MsgCommit.class, MsgRollback.class,MsgPrepare.class)
+                .withTypes(type,
+                           MsgAck.class, ServerId.class, MsgCommit.class, MsgRollback.class,
+                           MsgPrepare.class)
                 .build();
 
         this.messaging = messaging;
@@ -156,7 +158,7 @@ public class TwoPhaseCommit<T>
         final var exec = Executors.newFixedThreadPool(1);
 
         this.messaging.registerHandler(
-                Config.SERVER_ACK_PUBLICATION_MSG_NAME, this::handleServerAck, exec
+            Config.SERVER_ACK_PUBLICATION_MSG_NAME, this::handleServerAck, exec
         );
 
         this.messaging.registerHandler(

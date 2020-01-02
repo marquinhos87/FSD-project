@@ -2,6 +2,7 @@
 
 package chirper.server;
 
+import chirper.server.network.ServerId;
 import io.atomix.utils.net.Address;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
@@ -9,10 +10,10 @@ import org.yaml.snakeyaml.constructor.Constructor;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -23,23 +24,18 @@ public class ServerConfig
     private final ServerId localServerId;
     private final int localServerPort;
 
-    private final List< Address > remoteServerAddresses;
-
-    private final List< ServerIdAddress> remoteServerIdsAddresses;
+    private final Map< ServerId, Address > remoteServerAddressesById;
 
     public ServerConfig(
         ServerId localServerId,
         int localServerPort,
-        Collection< Address > remoteServerAddresses,
-        Collection<ServerIdAddress> remoteServerIdsAddresses
+        Map< ServerId, Address > remoteServerAddressesById
     )
     {
         this.localServerId = Objects.requireNonNull(localServerId);
         this.localServerPort = localServerPort;
 
-        this.remoteServerAddresses = new ArrayList<>(remoteServerAddresses);
-
-        this.remoteServerIdsAddresses = new ArrayList<>(remoteServerIdsAddresses);
+        this.remoteServerAddressesById = new HashMap<>(remoteServerAddressesById);
     }
 
     public ServerId getLocalServerId()
@@ -52,14 +48,9 @@ public class ServerConfig
         return this.localServerPort;
     }
 
-    public List< Address > getRemoteServerAddresses()
+    public Map< ServerId, Address > getRemoteServerAddressesById()
     {
-        return Collections.unmodifiableList(this.remoteServerAddresses);
-    }
-
-    public List< ServerIdAddress > getRemoteServerIdsAddresses()
-    {
-        return Collections.unmodifiableList(this.remoteServerIdsAddresses);
+        return Collections.unmodifiableMap(remoteServerAddressesById);
     }
 
     public static ServerConfig parseYamlFile(Path filePath) throws IOException
@@ -81,12 +72,10 @@ public class ServerConfig
             root.localServer.port,
             root.remoteServers
                 .stream()
-                .map(s -> new Address(s.host, s.port))
-                .collect(Collectors.toList()),
-            root.remoteServers
-                .stream()
-                .map(s -> new ServerIdAddress(s.id,new Address(s.host, s.port)))
-                .collect(Collectors.toList())
+                .collect(Collectors.toMap(
+                    s -> new ServerId(s.id),
+                    s -> Address.from(s.host, s.port)
+                ))
         );
     }
 

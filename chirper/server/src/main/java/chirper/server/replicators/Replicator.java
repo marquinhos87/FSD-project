@@ -1,4 +1,6 @@
-package chirper.server.things;
+package chirper.server.replicators;
+
+import chirper.server.network.ServerNetwork;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;

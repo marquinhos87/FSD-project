@@ -1,6 +1,6 @@
 /* -------------------------------------------------------------------------- */
 
-package chirper.server;
+package chirper.server.replicators;
 
 /* -------------------------------------------------------------------------- */
 
@@ -9,19 +9,14 @@ package chirper.server;
  */
 public class MsgAck extends Msg
 {
-    //public ServerId serverId;
-    //public long chirpTimestamp;
-
     /**
      * TODO: document
      *
-     * @param chirpTimestamp TODO: document
+     * @param twopc_id TODO: document
      */
-    public MsgAck(ServerId serverId, long chirpTimestamp)
+    public MsgAck(ServerId serverId, long twopc_id)
     {
-        super(serverId,chirpTimestamp);
-        //this.serverId = Objects.requireNonNull(serverId);
-        //this.chirpTimestamp = chirpTimestamp;
+        super(serverId,twopc_id);
     }
 }
 

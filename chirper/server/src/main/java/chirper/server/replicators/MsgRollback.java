@@ -1,27 +1,25 @@
 /* -------------------------------------------------------------------------- */
 
-package chirper.shared;
+package chirper.server.replicators;
 
 /* -------------------------------------------------------------------------- */
-
-import java.util.Objects;
 
 /**
  * TODO: document
  */
-public class MsgCommit extends Msg
+public class MsgRollback extends Msg
 {
-    //public ServerId serverId;
-    //public long id;
+    public int numRemove;
 
     /**
      * TODO: document
+     *
+     * @param twopc_id TODO: document
      */
-    public MsgCommit(ServerId serverId, long id)
+    public MsgRollback(ServerId serverId, long twopc_id, int numRemove)
     {
-        super(serverId,id);
-        //this.serverId = Objects.requireNonNull(serverId);
-        //this.id = id;
+        super(serverId,twopc_id);
+        this.numRemove = numRemove;
     }
 }
 

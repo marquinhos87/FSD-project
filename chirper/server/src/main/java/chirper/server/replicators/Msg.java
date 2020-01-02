@@ -1,21 +1,21 @@
-package chirper.server;
+package chirper.server.replicators;
 
 import java.util.Objects;
 
 public class Msg {
 
     public ServerId serverId;
-    public long timestamp;
+    public long twopc_id;
 
     /**
      * TODO: document
      *
-     * @param timestamp TODO: document
+     * @param twopc_id TODO: document
      */
-    public Msg(ServerId serverId, long timestamp)
+    public Msg(ServerId serverId, long twopc_id)
     {
         this.serverId = Objects.requireNonNull(serverId);
-        this.timestamp = timestamp;
+        this.twopc_id = twopc_id;
     }
 
 }

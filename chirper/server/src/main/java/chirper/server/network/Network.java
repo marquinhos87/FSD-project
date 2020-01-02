@@ -1,4 +1,4 @@
-package chirper.server.things;
+package chirper.server.network;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
