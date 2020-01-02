@@ -1,4 +1,4 @@
-package chirper.shared;
+package chirper.server.replicators;
 
 import io.atomix.storage.journal.SegmentedJournal;
 import io.atomix.storage.journal.SegmentedJournalReader;

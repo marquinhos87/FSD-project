@@ -1,6 +1,5 @@
 package chirper.server.network;
 
-import chirper.server.ServerId;
 import io.atomix.utils.net.Address;
 
 import java.util.Collections;

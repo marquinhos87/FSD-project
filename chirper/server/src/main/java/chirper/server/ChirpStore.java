@@ -1,6 +1,6 @@
 /* -------------------------------------------------------------------------- */
 
-package chirper.server.things;
+package chirper.server;
 
 import chirper.shared.Config;
 import chirper.shared.Util;

@@ -2,6 +2,8 @@
 
 package chirper.server;
 
+import chirper.server.network.ServerId;
+
 import java.util.Objects;
 
 /* -------------------------------------------------------------------------- */

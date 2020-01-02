@@ -1,6 +1,6 @@
 package chirper.server.replicators;
 
-import chirper.server.ServerId;
+import chirper.server.network.ServerId;
 import chirper.server.network.ServerNetwork;
 
 import java.util.concurrent.CompletableFuture;

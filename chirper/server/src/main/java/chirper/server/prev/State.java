@@ -1,7 +1,8 @@
 /* -------------------------------------------------------------------------- */
 
-package chirper.server;
+package chirper.server.prev;
 
+import chirper.server.network.ServerId;
 import chirper.shared.Config;
 import chirper.shared.Util;
 
