@@ -2,8 +2,6 @@
 
 package chirper.server.prev;
 
-import chirper.server.MsgChirp;
-import chirper.server.PendingChirp;
 import chirper.server.ServerConfig;
 import chirper.server.network.ServerId;
 import chirper.server.replicators.MsgAck;

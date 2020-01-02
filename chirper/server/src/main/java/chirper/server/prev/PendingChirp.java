@@ -1,6 +1,6 @@
 /* -------------------------------------------------------------------------- */
 
-package chirper.server;
+package chirper.server.prev;
 
 import chirper.server.network.ServerId;
 
