@@ -1,16 +1,12 @@
-package chirper.server.replicators;
+package chirper.server.broadcast;
 
 import chirper.server.network.ServerId;
 import chirper.server.network.ServerNetwork;
 import chirper.shared.Config;
-import io.atomix.cluster.messaging.ManagedMessagingService;
-import io.atomix.utils.net.Address;
-import io.atomix.utils.serializer.Serializer;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 /**
@@ -19,19 +15,19 @@ import java.util.function.Consumer;
  *
  * Call put() to run an instance of 2PC; the returned future completes
  * successfully with true if 2PC commits, successfully with false if 2PC aborts,
- * and exceptionally if the onValueCommitted callback throws an exception.
+ * and exceptionally if the onMessageReceived callback throws an exception.
  *
  * Note that the future returned by put() only completes after the
- * onValueCommitted callback is run locally for the value passed to put().
+ * onMessageReceived callback is run locally for the value passed to put().
  *
- * The onValueCommitted callback is called for any 2PC that commits, be it
+ * The onMessageReceived callback is called for any 2PC that commits, be it
  * coordinated by the local server or by another server. Also, the callback is
  * called for each committed value in the same order in all servers.
  *
  * @param <T> the type of things to be committed
  */
 
-public class CoherentOrderedReplicator<T> extends Replicator<T>
+public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
 {
     private final ServerNetwork serverNetwork;
 
@@ -84,13 +80,13 @@ public class CoherentOrderedReplicator<T> extends Replicator<T>
         }
     }
 
-    public CoherentOrderedReplicator(
+    public AllOrNothingOrderedBroadcaster(
         ServerNetwork serverNetwork,
-        Consumer<T> onValueCommitted,
+        Consumer<T> onMessageReceived,
         Class<T> type
     )
     {
-        super(serverNetwork,onValueCommitted);
+        super(serverNetwork,onMessageReceived);
 
         this.serverNetwork = serverNetwork;
 
@@ -159,7 +155,7 @@ public class CoherentOrderedReplicator<T> extends Replicator<T>
 
         waitOutcome(decision,serverId,value.twopc_id);
 
-        getOnValueCommitted().accept((T) value.content);
+        getOnMessageReceived().accept((T) value.content);
 
         this.participating.remove(new pair(value.serverId,value.twopc_id));
     }
@@ -345,7 +341,7 @@ public class CoherentOrderedReplicator<T> extends Replicator<T>
                 askToCommit(ackFuture,id).thenRun(()->
                 {
                     this.coordinating.remove(id);
-                    getOnValueCommitted().accept(value);
+                    getOnMessageReceived().accept(value);
                     System.out.println("Terminou o 2PC.");
                 });
             }).thenApply(v -> true);

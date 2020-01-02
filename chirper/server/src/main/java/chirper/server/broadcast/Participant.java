@@ -1,4 +1,4 @@
-package chirper.server.replicators;
+package chirper.server.broadcast;
 
 import java.util.concurrent.CompletableFuture;
 

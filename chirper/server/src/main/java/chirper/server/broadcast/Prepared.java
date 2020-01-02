@@ -1,4 +1,4 @@
-package chirper.server.replicators;
+package chirper.server.broadcast;
 
 public class Prepared {
     // Log Marker

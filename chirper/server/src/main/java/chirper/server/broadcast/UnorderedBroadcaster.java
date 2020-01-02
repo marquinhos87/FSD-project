@@ -1,4 +1,4 @@
-package chirper.server.replicators;
+package chirper.server.broadcast;
 
 import chirper.server.network.ServerId;
 import chirper.server.network.ServerNetwork;
@@ -6,24 +6,24 @@ import chirper.server.network.ServerNetwork;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-public class UnorderedReplicator<T> extends Replicator<T>
+public class UnorderedBroadcaster<T> extends Broadcaster<T>
 {
-    public UnorderedReplicator(
+    public UnorderedBroadcaster(
         ServerNetwork serverNetwork,
-        Class<T> valueClass,
-        Consumer<T> onValueCommitted
+        Class<T> messagePayloadClass,
+        Consumer<T> onMessageReceived
     )
     {
-        super(serverNetwork, onValueCommitted);
+        super(serverNetwork, onMessageReceived);
 
-        serverNetwork.registerPayloadType(valueClass);
+        serverNetwork.registerPayloadType(messagePayloadClass);
         serverNetwork.registerHandler("value", this::handleValue);
     }
 
     @Override
     public CompletableFuture< Boolean > put(T value)
     {
-        this.getOnValueCommitted().accept(value);
+        this.getOnMessageReceived().accept(value);
 
         // send value to all remote servers
 
@@ -41,6 +41,6 @@ public class UnorderedReplicator<T> extends Replicator<T>
 
     private void handleValue(ServerId serverId, T value)
     {
-        this.getOnValueCommitted().accept(value);
+        this.getOnMessageReceived().accept(value);
     }
 }

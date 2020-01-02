@@ -3,9 +3,8 @@ package chirper.server;
 import chirper.server.network.Network;
 import chirper.server.network.ServerId;
 import chirper.server.network.ServerNetwork;
-import chirper.server.replicators.CoherentOrderedReplicator;
-import chirper.server.replicators.Replicator;
-import chirper.server.replicators.UnorderedReplicator;
+import chirper.server.broadcast.AllOrNothingOrderedBroadcaster;
+import chirper.server.broadcast.Broadcaster;
 import chirper.shared.Config;
 import io.atomix.utils.net.Address;
 
@@ -16,7 +15,7 @@ import java.util.concurrent.ExecutionException;
 public class Server implements AutoCloseable
 {
     private final Network network;
-    private final Replicator< String > replicator;
+    private final Broadcaster< String > broadcaster;
 
     private final ChirpStore chirpStore;
 
@@ -48,9 +47,9 @@ public class Server implements AutoCloseable
             remoteServerAddressesById
         );
 
-        this.replicator = new CoherentOrderedReplicator<>(
+        this.broadcaster = new AllOrNothingOrderedBroadcaster<>(
             serverNetwork,
-            this::onChirpCommitted,
+            this::onChirpPublished,
             String.class
         );
 
@@ -97,12 +96,12 @@ public class Server implements AutoCloseable
     )
     {
         return
-            this.replicator
+            this.broadcaster
                 .put(chirp)
                 .thenApply(success -> success ? null : "Error");
     }
 
-    private void onChirpCommitted(String chirp)
+    private void onChirpPublished(String chirp)
     {
         this.chirpStore.addChirp(chirp);
     }

@@ -1,4 +1,4 @@
-package chirper.server.replicators;
+package chirper.server.broadcast;
 
 import chirper.server.network.ServerNetwork;
 
@@ -12,29 +12,29 @@ import java.util.function.Consumer;
  *
  * Call put() to run an instance of 2PC; the returned future completes
  * successfully with true if 2PC commits, successfully with false if 2PC aborts,
- * and exceptionally if the onValueCommitted callback throws an exception.
+ * and exceptionally if the onMessageReceived callback throws an exception.
  *
  * Note that the future returned by put() only completes after the
- * onValueCommitted callback is run locally for the value passed to put().
+ * onMessageReceived callback is run locally for the value passed to put().
  *
- * The onValueCommitted callback is called for any 2PC that commits, be it
+ * The onMessageReceived callback is called for any 2PC that commits, be it
  * coordinated by the local server or by another server. Also, the callback is
  * called for each committed value in the same order in all servers.
  *
  * @param <T> the type of things to be committed
  */
-public abstract class Replicator<T>
+public abstract class Broadcaster<T>
 {
     private final ServerNetwork serverNetwork;
-    private final Consumer<T> onValueCommitted;
+    private final Consumer<T> onMessageReceived;
 
-    protected Replicator(
+    protected Broadcaster(
         ServerNetwork serverNetwork,
-        Consumer<T> onValueCommitted
+        Consumer<T> onMessageReceived
     )
     {
         this.serverNetwork = Objects.requireNonNull(serverNetwork);
-        this.onValueCommitted = Objects.requireNonNull(onValueCommitted);
+        this.onMessageReceived = Objects.requireNonNull(onMessageReceived);
     }
 
     public abstract CompletableFuture< Boolean > put(T value);
@@ -44,8 +44,8 @@ public abstract class Replicator<T>
         return this.serverNetwork;
     }
 
-    protected Consumer<T> getOnValueCommitted()
+    protected Consumer<T> getOnMessageReceived()
     {
-        return this.onValueCommitted;
+        return this.onMessageReceived;
     }
 }

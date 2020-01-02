@@ -1,4 +1,4 @@
-package chirper.server.replicators;
+package chirper.server.broadcast;
 
 import chirper.server.network.ServerId;
 import io.atomix.storage.journal.SegmentedJournal;
