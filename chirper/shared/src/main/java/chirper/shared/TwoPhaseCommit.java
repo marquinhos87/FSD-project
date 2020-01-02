@@ -132,7 +132,7 @@ public class TwoPhaseCommit<T>
         Collection<chirper.server.ServerIdAddress> remoteServerAddressesAndIds,
         ManagedMessagingService messaging,
         /*Consumer<T> onValueCommitted,*/
-        Class<T> type
+        Class<chirper.server.MsgChirp> type
     )
     {
         this.localServerId = new ServerId(localServerId);
