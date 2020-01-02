@@ -44,72 +44,8 @@ public class CoherentOrderedReplicator<T> extends Replicator<T>
     private Map<pair, Participant > participating;
 
     // Coordinating
-    private Map<Long,pendingTransaction> coordinating;
+    private Map<Long,PendingTransaction> coordinating;
 
-    private class pendingTransaction
-    {
-        private final int numRemoteServers;
-        private long id;
-        private final Set< ServerId > ackedServerIds;
-        private final Set< ServerId > votedServerIds;
-        private final CompletableFuture< Void > onAllAcked;
-        private final CompletableFuture< Void > onAllVoted;
-
-        /**
-         * TODO: document
-         *
-         * @param numRemoteServers TODO: document
-         * @param onAllAcked TODO: document
-         */
-        public pendingTransaction
-        (
-            int numRemoteServers,
-            CompletableFuture< Void > onAllAcked,
-            CompletableFuture< Void > onAllVoted
-        )
-        {
-            this.numRemoteServers = numRemoteServers;
-            this.ackedServerIds = new HashSet<>();
-            this.votedServerIds = new HashSet<>();
-            this.onAllAcked = Objects.requireNonNull(onAllAcked);
-            this.onAllVoted = Objects.requireNonNull(onAllVoted);
-
-            checkAllVoted();
-            checkAllAcked();
-        }
-
-        public void serverVote(ServerId serverId)
-        {
-            if(!this.votedServerIds.contains(serverId))
-            {
-                this.votedServerIds.add(serverId);
-                checkAllVoted();
-            }
-        }
-
-        private void checkAllVoted()
-        {
-            if (this.votedServerIds.size() == this.numRemoteServers)
-            {
-                this.onAllVoted.complete(null);
-            }
-        }
-
-        public void ackServer(ServerId serverId)
-        {
-            this.ackedServerIds.add(serverId);
-
-            checkAllAcked();
-        }
-
-        private void checkAllAcked()
-        {
-            if (this.ackedServerIds.size() == this.numRemoteServers)
-            {
-                this.onAllAcked.complete(null);
-            }
-        }
-    }
 
     private class pair
     {
@@ -189,36 +125,26 @@ public class CoherentOrderedReplicator<T> extends Replicator<T>
 
     private void handleServerCommit(ServerId serverId, MsgCommit value)
     {
-       // this.getOnValueCommitted().accept(value);
         this.participating.get(new pair(value.serverId,value.twopc_id)).setDecision(value);
     }
 
     private void handleServerRollback(ServerId serverId, MsgRollback value)
     {
-        //final var msg = this.serializer.< MsgRollback >decode(payload);
-
         this.participating.get(new pair(serverId,value.twopc_id)).setDecision(value);
     }
 
     private void handleServerAck(ServerId serverId, MsgAck value)
     {
-        // final var msg = this.serializer.< MsgAck >decode(value);
-
         this.coordinating.get(value.twopc_id).ackServer(value.serverId);
     }
 
     private void handleServerOk(ServerId serverId, MsgAck value)
     {
-        // final var msg = this.serializer.< MsgAck >decode(payload);
-
         this.coordinating.get(value.twopc_id).serverVote(value.serverId);
     }
 
     private void handleServerPublish(ServerId serverId, MsgPrepare value)
     {
-
-        //final var msg = this.serializer.<MsgPrepare>decode(payload);
-
         // "synchronize" and tick clock
 
         //this.clock = Math.max(this.clock, msg.timestamp) + 1;
@@ -233,6 +159,9 @@ public class CoherentOrderedReplicator<T> extends Replicator<T>
 
         waitOutcome(decision,serverId,value.twopc_id);
 
+        getOnValueCommitted().accept((T) value.content);
+
+        this.participating.remove(new pair(value.serverId,value.twopc_id));
     }
 
     /**
@@ -272,7 +201,6 @@ public class CoherentOrderedReplicator<T> extends Replicator<T>
             serverId,
             Config.SERVER_VOTE_OK_MSG_NAME,
             new MsgAck(this.serverNetwork.getLocalServerId(), twopc_id)
-            //this.serializer.encode(new MsgAck(this.localServerId, twopc_id))
         );
 
         decision.thenAccept(v ->
@@ -286,9 +214,7 @@ public class CoherentOrderedReplicator<T> extends Replicator<T>
 
                 if (action instanceof MsgCommit)
                 {
-                    var msg = participant.getMsgChirp();
                     System.out.println("Decision: Commit Chirp -> ");
-                    //this.state.addChirp(msg.serverId, msg.timestamp, msg.text);
 
                     participant.commit();
                 }
@@ -301,7 +227,6 @@ public class CoherentOrderedReplicator<T> extends Replicator<T>
                     serverId,
                     Config.SERVER_ACK_PUBLICATION_MSG_NAME,
                     new MsgAck(this.serverNetwork.getLocalServerId(), twopc_id)
-                    //this.serializer.encode(new MsgAck(this.localServerId, twopc_id))
                 );
 
                 System.out.println("Terminou 2PC.");
@@ -314,7 +239,7 @@ public class CoherentOrderedReplicator<T> extends Replicator<T>
     {
         // Insert participants into Coordinator Log
 
-        //coordinatorLog.add(this.serverNetwork.getRemoteServerIds()); // Nao funciona a leitura do log depois
+        //coordinatorLog.add(serverNetwork.); // Nao funciona a leitura do log depois
 
         // send chirp to servers
 
@@ -351,8 +276,6 @@ public class CoherentOrderedReplicator<T> extends Replicator<T>
     {
         this.coordinatorLog.add(new Commit());
 
-        //final var commit = this.serializer.encode(new MsgCommit(this.localServerId,chirpTimestamp));
-
         final var commit =new MsgCommit(this.serverNetwork.getLocalServerId(),twopc_id);
 
         final var sendCommit = CompletableFuture.allOf(
@@ -377,8 +300,6 @@ public class CoherentOrderedReplicator<T> extends Replicator<T>
     private CompletionStage< Void > askToRollback(CompletableFuture<Void> ackFuture, long twopc_id, T value)
     {
         this.coordinatorLog.add(new Abort());
-
-        //final var abort = this.serializer.encode(new MsgRollback(this.localServerId,timestamp,2));
 
         final var abort = new MsgRollback(this.serverNetwork.getLocalServerId(),twopc_id,2);
 
@@ -414,7 +335,7 @@ public class CoherentOrderedReplicator<T> extends Replicator<T>
 
         this.coordinating.put(
             id,
-            new pendingTransaction(this.serverNetwork.getRemoteServerIds().size(), ackFuture, voteFuture)
+            new PendingTransaction(this.serverNetwork.getRemoteServerIds().size(), ackFuture, voteFuture)
         );
 
         var firstPhase = askToVote(voteFuture,value,id);
@@ -424,7 +345,7 @@ public class CoherentOrderedReplicator<T> extends Replicator<T>
                 askToCommit(ackFuture,id).thenRun(()->
                 {
                     this.coordinating.remove(id);
-                    //this.state.addChirp(this.localServerId, id, value);
+                    getOnValueCommitted().accept(value);
                     System.out.println("Terminou o 2PC.");
                 });
             }).thenApply(v -> true);
