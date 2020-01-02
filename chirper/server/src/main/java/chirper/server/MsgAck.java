@@ -4,8 +4,6 @@ package chirper.server;
 
 /* -------------------------------------------------------------------------- */
 
-import java.util.Objects;
-
 /**
  * TODO: document
  */
