@@ -10,6 +10,7 @@ import chirper.shared.Config;
 import io.atomix.utils.net.Address;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public class Server implements AutoCloseable
@@ -77,27 +78,28 @@ public class Server implements AutoCloseable
         this.network.close();
     }
 
-    private void clientGetHandler(Address clientAddress, String[] topics)
+    private CompletableFuture< String[] > clientGetHandler(
+        Address clientAddress,
+        String[] topics
+    )
     {
-        this.network.send(
-            clientAddress,
-            Config.CLIENT_GET_MSG_NAME,
-            this.chirpStore.getLatestChirps(topics).toArray(String[]::new)
-        );
+        final var result =
+            this.chirpStore
+                .getLatestChirps(topics)
+                .toArray(String[]::new);
+
+        return CompletableFuture.completedFuture(result);
     }
 
-    private void clientPublishHandler(Address clientAddress, String chirp)
+    private CompletableFuture< String > clientPublishHandler(
+        Address clientAddress,
+        String chirp
+    )
     {
-        this.replicator
-            .put(chirp)
-            .thenApply(success -> success ? null : "Error")
-            .thenAccept(
-                error -> this.network.send(
-                    clientAddress,
-                    Config.CLIENT_PUBLISH_MSG_NAME,
-                    error
-                    )
-            );
+        return
+            this.replicator
+                .put(chirp)
+                .thenApply(success -> success ? null : "Error");
     }
 
     private void onChirpCommitted(String chirp)

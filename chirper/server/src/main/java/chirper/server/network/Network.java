@@ -6,12 +6,14 @@ import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Serializer;
 import io.atomix.utils.serializer.SerializerBuilder;
+import org.apache.commons.math3.analysis.function.Add;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 
 public class Network implements AutoCloseable
 {
@@ -53,6 +55,20 @@ public class Network implements AutoCloseable
             );
     }
 
+    public < T, U > void registerHandler(
+        String msgType,
+        BiFunction< Address, T, CompletableFuture<U> > handler
+    )
+    {
+        this.messagingService.registerHandler(
+            msgType,
+            (address, bytes) ->
+                handler
+                    .apply(address, this.serializer.decode(bytes))
+                    .thenApply(this.serializer::encode)
+        );
+    }
+
     public <T> CompletableFuture< Void > send(
         Address address,
         String msgType,
@@ -64,6 +80,21 @@ public class Network implements AutoCloseable
             msgType,
             this.serializer.encode(payload)
         );
+    }
+
+    public < T, U > CompletableFuture<U> sendAndReceive(
+        Address address,
+        String msgType,
+        T payload
+    )
+    {
+        final var future = this.messagingService.sendAndReceive(
+            address,
+            msgType,
+            this.serializer.encode(payload)
+        );
+
+        return future.thenApply(this.serializer::decode);
     }
 
     public void start() throws ExecutionException, InterruptedException
