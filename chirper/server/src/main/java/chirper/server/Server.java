@@ -3,6 +3,7 @@
 package chirper.server;
 
 import chirper.shared.Config;
+import chirper.shared.TwoPhaseCommit;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
@@ -11,6 +12,7 @@ import io.atomix.utils.serializer.Serializer;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Consumer;
 
 /* -------------------------------------------------------------------------- */
 
@@ -24,6 +26,8 @@ public class Server implements AutoCloseable
 
     // the addresses of all remote servers
     private final Set< Address > remoteServerAddresses;
+
+    private final List<ServerIdAddress> remoteServerIdsAddresses;
 
     // the messaging service
     private final ManagedMessagingService messaging;
@@ -59,7 +63,8 @@ public class Server implements AutoCloseable
         this(
             config.getLocalServerId(),
             config.getLocalServerPort(),
-            config.getRemoteServerAddresses()
+            config.getRemoteServerAddresses(),
+            config.getRemoteServerIdsAddresses()
         );
     }
 
@@ -74,12 +79,15 @@ public class Server implements AutoCloseable
     public Server(
         ServerId localServerId,
         int localServerPort,
-        Collection< Address > remoteServerAddresses
+        Collection< Address > remoteServerAddresses,
+        Collection< ServerIdAddress> remoteServerIdsAddresses
     )
     {
         this.localServerId = Objects.requireNonNull(localServerId);
 
         this.remoteServerAddresses = new HashSet<>(remoteServerAddresses);
+
+        this.remoteServerIdsAddresses = new ArrayList<>(remoteServerIdsAddresses);
 
         this.messaging = new NettyMessagingService(
             Config.NETTY_CLUSTER_NAME,
@@ -201,15 +209,7 @@ public class Server implements AutoCloseable
 
         var decision = prepareCommit(msg);
 
-        // send acknowledgment, Vote OK - First phase answer
-
-        this.messaging.sendAsync(
-            from,
-            Config.SERVER_VOTE_OK_MSG_NAME,
-            this.serializer.encode(new MsgAck(this.localServerId, msg.timestamp))
-        );
-
-        // wait for the Outcome, Coordinator decision
+        // Vote and wait for outcome, Coordinator decision
 
         waitOutcome(decision,from,msg.timestamp);
 
@@ -227,6 +227,14 @@ public class Server implements AutoCloseable
         long timestamp
         )
     {
+
+        // send acknowledgment, Vote OK - First phase answer
+
+        this.messaging.sendAsync(
+            from,
+            Config.SERVER_VOTE_OK_MSG_NAME,
+            this.serializer.encode(new MsgAck(this.localServerId, timestamp))
+        );
 
         decision.thenAccept(v ->
         {
@@ -324,7 +332,15 @@ public class Server implements AutoCloseable
      */
     private CompletableFuture< Void > publishChirp(String chirp)
     {
+        final var timestamp = this.clock++;
+
         System.out.println("About to Start publishing Chirp...");
+
+        var msgchirp = new MsgChirp(localServerId,timestamp,chirp);
+
+        Consumer<MsgChirp> a = msgchirp ->
+
+        final var twopc = new TwoPhaseCommit<MsgChirp>(localServerId,remoteServerIdsAddresses,  ).put(msgchirp);
 
         // 2 Completables, 1 for the Server Votes (Phase 1) and 1 for the Acks (Phase 2)
 
@@ -332,8 +348,6 @@ public class Server implements AutoCloseable
         var ackFuture = new CompletableFuture< Void >();
 
         // create pending chirp
-
-        final var timestamp = this.clock++;
 
         this.pendingChirps.put(
              timestamp,
@@ -396,13 +410,14 @@ public class Server implements AutoCloseable
                 .toArray(CompletableFuture[]::new)
         );
 
-        this.participantLog.add(msgchirp);
-        this.participantLog.add(new Prepared());
+
 
         // (when we sent all reqs and received all acks, ...)
 
         return sendFuture.thenAcceptBoth(voteFuture, (v1, v2) -> {
             System.out.println("Recebeu todos os Votos.");
+            this.participantLog.add(msgchirp);
+            this.participantLog.add(new Prepared());
         })
             .thenApply(v -> "Commit")
             .exceptionally(v ->
@@ -439,7 +454,27 @@ public class Server implements AutoCloseable
 
     private CompletionStage< Void > askToRollback(CompletableFuture<Void> ackFuture, long timestamp, String chirp)
     {
-        return CompletableFuture.completedFuture(null);
+        this.coordinatorLog.add(new Abort());
+
+        final var abort = this.serializer.encode(new MsgRollback(this.localServerId,timestamp,2));
+
+        final var sendCommit = CompletableFuture.allOf(
+            this.remoteServerAddresses
+                .stream()
+                .map(
+                    address -> this.messaging.sendAsync(
+                        address, Config.SERVER_ROLLBACK_PUBLICATION_MSG_NAME, abort
+                    )
+                )
+                .toArray(CompletableFuture[]::new)
+        );
+
+        // Gather all Acks of the rollback
+
+        return sendCommit.thenAcceptBoth(ackFuture, (v3, v4) -> {
+            System.out.println("Recebeu todos os Rollbacks.");
+            this.participantLog.add(new Abort());
+        });
     }
 }
 

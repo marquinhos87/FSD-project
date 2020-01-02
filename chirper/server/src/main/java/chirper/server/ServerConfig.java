@@ -25,16 +25,21 @@ public class ServerConfig
 
     private final List< Address > remoteServerAddresses;
 
+    private final List< ServerIdAddress> remoteServerIdsAddresses;
+
     public ServerConfig(
         ServerId localServerId,
         int localServerPort,
-        Collection< Address > remoteServerAddresses
+        Collection< Address > remoteServerAddresses,
+        Collection<ServerIdAddress> remoteServerIdsAddresses
     )
     {
         this.localServerId = Objects.requireNonNull(localServerId);
         this.localServerPort = localServerPort;
 
         this.remoteServerAddresses = new ArrayList<>(remoteServerAddresses);
+
+        this.remoteServerIdsAddresses = new ArrayList<>(remoteServerIdsAddresses);
     }
 
     public ServerId getLocalServerId()
@@ -50,6 +55,11 @@ public class ServerConfig
     public List< Address > getRemoteServerAddresses()
     {
         return Collections.unmodifiableList(this.remoteServerAddresses);
+    }
+
+    public List< ServerIdAddress > getRemoteServerIdsAddresses()
+    {
+        return Collections.unmodifiableList(this.remoteServerIdsAddresses);
     }
 
     public static ServerConfig parseYamlFile(Path filePath) throws IOException
@@ -72,6 +82,10 @@ public class ServerConfig
             root.remoteServers
                 .stream()
                 .map(s -> new Address(s.host, s.port))
+                .collect(Collectors.toList()),
+            root.remoteServers
+                .stream()
+                .map(s -> new ServerIdAddress(s.id,new Address(s.host, s.port)))
                 .collect(Collectors.toList())
         );
     }
@@ -92,6 +106,7 @@ public class ServerConfig
     {
         public String host;
         public int port;
+        public int id;
     }
 }
 

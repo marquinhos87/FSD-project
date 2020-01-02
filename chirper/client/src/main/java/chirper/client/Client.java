@@ -78,7 +78,7 @@ public class Client implements AutoCloseable
 
         this.messaging = new NettyMessagingService(
             Config.NETTY_CLUSTER_NAME,
-            Address.local(),
+            Address.from(0),
             new MessagingConfig()
         );
 

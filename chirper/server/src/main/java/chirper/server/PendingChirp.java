@@ -49,9 +49,11 @@ public class PendingChirp
      */
     public void serverVote(ServerId serverId)
     {
-        this.votedServerIds.add(serverId);
-
-        checkAllVoted();
+        if(!this.votedServerIds.contains(serverId))
+        {
+            this.votedServerIds.add(serverId);
+            checkAllVoted();
+        }
     }
 
     /**

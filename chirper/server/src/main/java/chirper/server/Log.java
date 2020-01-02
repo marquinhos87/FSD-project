@@ -31,15 +31,11 @@ public class Log {
 
     public void add(Object o)
     {
-        //SegmentedJournalWriter<Object> w = sj.writer();
         w.append(o);
         CompletableFuture.supplyAsync(()->{
             w.flush();
             return null;
         });
-        /*    .thenRun(()->{
-                w.close();
-            });*/
     }
 
     public Object get()
@@ -57,12 +53,11 @@ public class Log {
 
     public void remove(int i)
     {
-        SegmentedJournalWriter<Object> w = sj.writer();
         w.truncate(w.getLastIndex()-i);
-        CompletableFuture.supplyAsync(()->{w.flush();return null;})
-            .thenRun(()->{
-                w.close();
-            });
+        CompletableFuture.supplyAsync(()->{
+            w.flush();
+            return null;
+        });
     }
 
 }
