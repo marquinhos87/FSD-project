@@ -19,9 +19,11 @@ import java.util.concurrent.ExecutionException;
 
 public class Server implements AutoCloseable
 {
+    private final ServerId localServerId;
     private final Network network;
     private final Broadcaster< Chirp > broadcaster;
 
+    private Long nextChirpTimestamp;
     private final ChirpStore chirpStore;
 
     public Server(ServerConfig config)
@@ -39,6 +41,7 @@ public class Server implements AutoCloseable
         Map< ServerId, Address > remoteServerAddressesById
     )
     {
+        this.localServerId = localServerId;
         this.network = new Network(localServerPort);
 
         final var serverNetwork = new ServerNetwork(
@@ -50,8 +53,10 @@ public class Server implements AutoCloseable
         this.broadcaster = new AllOrNothingOrderedBroadcaster<>(
             serverNetwork,
             this::onChirpPublished,
-            String.class
+            Chirp.class
         );
+
+        this.nextChirpTimestamp = Long.MIN_VALUE;
 
         this.chirpStore = new ChirpStore();
 
@@ -93,18 +98,29 @@ public class Server implements AutoCloseable
 
     private CompletableFuture< String > clientPublishHandler(
         Address clientAddress,
-        String chirp
+        String chirpText
     )
     {
+        final var chirp = new Chirp(
+            this.localServerId,
+            this.nextChirpTimestamp++,
+            chirpText
+        );
+
         return
             this.broadcaster
                 .broadcast(chirp)
                 .thenApply(success -> success ? null : "Error");
     }
 
-    private void onChirpPublished(String chirp)
+    private void onChirpPublished(Chirp chirp)
     {
-        this.chirpStore.addChirp(chirp);
+        this.nextChirpTimestamp = 1 + Math.max(
+            this.nextChirpTimestamp,
+            chirp.getTimestamp()
+        );
+
+        this.chirpStore.addChirp(chirp.getText());
     }
 }
 
