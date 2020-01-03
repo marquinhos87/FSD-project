@@ -1,3 +1,5 @@
+/* -------------------------------------------------------------------------- */
+
 package chirper.shared;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
@@ -13,6 +15,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+
+/* -------------------------------------------------------------------------- */
 
 public class Network implements AutoCloseable
 {
@@ -104,8 +108,10 @@ public class Network implements AutoCloseable
     }
 
     @Override
-    public void close() throws Exception
+    public void close() throws ExecutionException, InterruptedException
     {
         this.messagingService.stop().get();
     }
 }
+
+/* -------------------------------------------------------------------------- */
