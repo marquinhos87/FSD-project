@@ -23,7 +23,7 @@ public class Server implements AutoCloseable
     private final Network network;
     private final Broadcaster< Chirp > broadcaster;
 
-    private Long nextChirpTimestamp;
+    private long nextChirpTimestamp;
     private final ChirpStore chirpStore;
 
     public Server(ServerConfig config)
@@ -57,8 +57,8 @@ public class Server implements AutoCloseable
             Chirp.class
         );
 
-        this.nextChirpTimestamp = Long.MIN_VALUE;
         this.chirpStore = new ChirpStore(localServerId);
+        this.nextChirpTimestamp = this.chirpStore.getLatestTimestamp() + 1;
 
         // register message handlers
 
