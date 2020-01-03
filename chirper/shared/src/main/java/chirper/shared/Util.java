@@ -2,7 +2,6 @@
 
 package chirper.shared;
 
-import java.io.PrintWriter;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -49,9 +48,6 @@ public class Util
                 .map(mr -> mr.group(1))
                 .collect(Collectors.toUnmodifiableSet());
     }
-
-    // output
-
 }
 
 /* -------------------------------------------------------------------------- */
