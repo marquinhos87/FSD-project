@@ -11,6 +11,7 @@ import chirper.server.broadcast.Broadcaster;
 import chirper.shared.Config;
 import io.atomix.utils.net.Address;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -27,6 +28,7 @@ public class Server implements AutoCloseable
     private final ChirpStore chirpStore;
 
     public Server(ServerConfig config)
+        throws IOException, ClassNotFoundException
     {
         this(
             config.getLocalServerId(),
@@ -39,7 +41,7 @@ public class Server implements AutoCloseable
         ServerId localServerId,
         int localServerPort,
         Map< ServerId, Address > remoteServerAddressesById
-    )
+    ) throws IOException, ClassNotFoundException
     {
         this.localServerId = localServerId;
         this.network = new Network(localServerPort);
@@ -57,7 +59,7 @@ public class Server implements AutoCloseable
         );
 
         this.nextChirpTimestamp = Long.MIN_VALUE;
-        this.chirpStore = new ChirpStore();
+        this.chirpStore = new ChirpStore(localServerId);
 
         // register message handlers
 

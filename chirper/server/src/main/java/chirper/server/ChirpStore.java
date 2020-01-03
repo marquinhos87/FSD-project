@@ -2,10 +2,19 @@
 
 package chirper.server;
 
+import chirper.server.network.ServerId;
 import chirper.server.state.Chirp;
 import chirper.shared.Config;
 import chirper.shared.Util;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -30,13 +39,17 @@ public class ChirpStore
             .comparingLong(Chirp::getTimestamp)
             .thenComparing(Chirp::getServerId);
 
+    private final Path stateFilePath;
+
     // maps topics to all chirps with that topic
     // (the same chirp can exist under more than one topic)
     private final Map< String, SortedSet< Chirp > > chirpsByTopic;
 
-    public ChirpStore()
+    public ChirpStore(ServerId localServerId)
+        throws IOException, ClassNotFoundException
     {
-        this.chirpsByTopic = new HashMap<>();
+        this.stateFilePath = Path.of("state-" + localServerId.getValue() + ".dat");
+        this.chirpsByTopic = readState(this.stateFilePath);
     }
 
     public void addChirp(Chirp chirp)
@@ -69,6 +82,10 @@ public class ChirpStore
         // add new chirp
 
         set.add(chirp);
+
+        // persist state
+
+        this.writeState();
     }
 
     public List< String > getLatestChirps(String[] topics)
@@ -111,6 +128,40 @@ public class ChirpStore
         Collections.reverse(chirps);
 
         return chirps;
+    }
+
+    private static Map< String, SortedSet< Chirp > > readState(
+        Path stateFilePath
+    ) throws IOException, ClassNotFoundException
+    {
+        if (!Files.exists(stateFilePath))
+            return new HashMap<>();
+
+        try (
+            final var f = new FileInputStream(stateFilePath.toFile());
+            final var o = new ObjectInputStream(f)
+        )
+        {
+            return (Map< String, SortedSet< Chirp > >)o.readObject();
+        }
+    }
+
+    private void writeState()
+    {
+        try
+        {
+            try (
+                final var f = new FileOutputStream(this.stateFilePath.toFile());
+                final var o = new ObjectOutputStream(f)
+            )
+            {
+                o.writeObject(this.chirpsByTopic);
+            }
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 }
 
