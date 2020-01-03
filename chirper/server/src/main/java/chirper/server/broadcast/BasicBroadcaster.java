@@ -26,7 +26,7 @@ public class BasicBroadcaster<T> extends Broadcaster<T>
     @Override
     public CompletableFuture< Boolean > broadcast(T value)
     {
-        this.getOnMessageReceived().accept(value);
+        this.getOnMessageTransmitted().accept(value);
 
         // send value to all remote servers
 
@@ -44,6 +44,6 @@ public class BasicBroadcaster<T> extends Broadcaster<T>
 
     private void handleValue(ServerId serverId, T value)
     {
-        this.getOnMessageReceived().accept(value);
+        this.getOnMessageTransmitted().accept(value);
     }
 }

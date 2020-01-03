@@ -228,7 +228,7 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
                 if (action instanceof MsgCommit)
                 {
                     System.out.println("Decision: Commit Chirp -> ");
-                    getOnMessageReceived().accept((T) value);
+                    getOnMessageTransmitted().accept((T) value);
                     participant.commit(serverId,twopc_id);
                 }
                 else {
@@ -333,7 +333,7 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
                 askToCommit(p.onAllAcked,p.id).thenRun(()->
                 {
                     this.coordinating.remove(p.id);
-                    getOnMessageReceived().accept((T) p.value);
+                    getOnMessageTransmitted().accept((T) p.value);
                     System.out.println("Terminou o 2PC.");
                 });
             });
@@ -383,7 +383,7 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
                 this.coordinatorLog.appendEntry(new Commit(serverNetwork.getLocalServerId(), id));
                 askToCommit(ackFuture, id).thenRun(() ->
                 {
-                    getOnMessageReceived().accept(value);
+                    getOnMessageTransmitted().accept(value);
                     System.out.println("Terminou o 2PC.");
                 });
             }
