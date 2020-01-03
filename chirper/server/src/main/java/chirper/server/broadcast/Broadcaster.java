@@ -26,15 +26,15 @@ import java.util.function.Consumer;
 public abstract class Broadcaster<T>
 {
     private final ServerNetwork serverNetwork;
-    private final Consumer<T> onMessageReceived;
+    private final Consumer<T> onMessageTransmitted;
 
     protected Broadcaster(
         ServerNetwork serverNetwork,
-        Consumer<T> onMessageReceived
+        Consumer<T> onMessageTransmitted
     )
     {
         this.serverNetwork = Objects.requireNonNull(serverNetwork);
-        this.onMessageReceived = Objects.requireNonNull(onMessageReceived);
+        this.onMessageTransmitted = Objects.requireNonNull(onMessageTransmitted);
     }
 
     public abstract void repeatTransactions();
@@ -46,8 +46,8 @@ public abstract class Broadcaster<T>
         return this.serverNetwork;
     }
 
-    protected Consumer<T> getOnMessageReceived()
+    protected Consumer<T> getOnMessageTransmitted()
     {
-        return this.onMessageReceived;
+        return this.onMessageTransmitted;
     }
 }
