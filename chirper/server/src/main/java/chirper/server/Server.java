@@ -57,8 +57,9 @@ public class Server implements AutoCloseable
         );
 
         this.nextChirpTimestamp = Long.MIN_VALUE;
-
         this.chirpStore = new ChirpStore();
+
+        // register message handlers
 
         this.network.registerHandler(
             Config.CLIENT_MSG_TYPE_GET,
