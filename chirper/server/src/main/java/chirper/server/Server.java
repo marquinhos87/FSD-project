@@ -1,6 +1,6 @@
 package chirper.server;
 
-import chirper.server.network.Network;
+import chirper.shared.Network;
 import chirper.server.network.ServerId;
 import chirper.server.network.ServerNetwork;
 import chirper.server.broadcast.AllOrNothingOrderedBroadcaster;

@@ -1,4 +1,4 @@
-package chirper.server.network;
+package chirper.shared;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
@@ -6,7 +6,6 @@ import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Serializer;
 import io.atomix.utils.serializer.SerializerBuilder;
-import org.apache.commons.math3.analysis.function.Add;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
