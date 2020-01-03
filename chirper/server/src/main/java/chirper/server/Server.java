@@ -5,7 +5,7 @@ package chirper.server;
 import chirper.shared.Network;
 import chirper.server.network.ServerId;
 import chirper.server.network.ServerNetwork;
-import chirper.server.broadcast.AllOrNothingOrderedBroadcaster;
+import chirper.server.broadcast.AllOrNothingBroadcaster;
 import chirper.server.broadcast.Broadcaster;
 import chirper.shared.Config;
 import io.atomix.utils.net.Address;
@@ -51,7 +51,7 @@ public class Server implements AutoCloseable
             remoteServerAddressesById
         );
 
-        this.broadcaster = new AllOrNothingOrderedBroadcaster<>(
+        this.broadcaster = new AllOrNothingBroadcaster<>(
             serverNetwork,
             this::onChirpPublished,
             Chirp.class

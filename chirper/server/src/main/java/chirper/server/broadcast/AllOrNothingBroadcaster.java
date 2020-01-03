@@ -9,7 +9,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 
-public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
+public class AllOrNothingBroadcaster<T> extends Broadcaster<T>
 {
     private final ServerNetwork serverNetwork;
 
@@ -62,7 +62,7 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
         }
     }
 
-    public AllOrNothingOrderedBroadcaster(
+    public AllOrNothingBroadcaster(
         ServerNetwork serverNetwork,
         Consumer<T> onMessageReceived,
         Class<T> type
