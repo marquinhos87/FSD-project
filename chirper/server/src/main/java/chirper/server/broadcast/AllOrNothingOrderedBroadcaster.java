@@ -267,7 +267,7 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
         );
 
         // (when we sent all reqs and received all acks, ...)
-        return sendFuture.thenAcceptAsync(v -> voteFuture.thenRun(()->{})).thenApply(v->"Commit").exceptionally(v->"Abort");
+        return sendFuture.thenAccept(v -> voteFuture.thenRun(()->{})).thenApply(v->"Commit").exceptionally(v->"Abort");
 
         /*return sendFuture.thenAcceptBothAsync(voteFuture, (v1, v2) -> {
             System.out.println("Recebeu todos os Votos.");
