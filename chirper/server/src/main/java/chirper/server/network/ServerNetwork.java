@@ -1,3 +1,5 @@
+/* -------------------------------------------------------------------------- */
+
 package chirper.server.network;
 
 import chirper.shared.Network;
@@ -6,9 +8,12 @@ import io.atomix.utils.net.Address;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
+
+/* -------------------------------------------------------------------------- */
 
 public class ServerNetwork
 {
@@ -22,8 +27,8 @@ public class ServerNetwork
         Map< ServerId, Address > remoteServerAddressesById
     )
     {
-        this.underlyingNetwork = underlyingNetwork;
-        this.localServerId = localServerId;
+        this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
+        this.localServerId = Objects.requireNonNull(localServerId);
         this.remoteServerAddressesById = new HashMap<>(remoteServerAddressesById);
 
         this.underlyingNetwork.registerPayloadType(TaggedPayload.class);
@@ -85,3 +90,5 @@ public class ServerNetwork
         }
     }
 }
+
+/* -------------------------------------------------------------------------- */
