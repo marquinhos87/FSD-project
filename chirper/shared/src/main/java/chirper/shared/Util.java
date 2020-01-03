@@ -52,17 +52,6 @@ public class Util
 
     // output
 
-    public static void printWarning(PrintWriter writer, String text)
-    {
-        writer.format("\033[33m%s\033[0m\n", text);
-        writer.flush();
-    }
-
-    public static void printError(PrintWriter writer, String text)
-    {
-        writer.format("\033[31m%s\033[0m\n", text);
-        writer.flush();
-    }
 }
 
 /* -------------------------------------------------------------------------- */

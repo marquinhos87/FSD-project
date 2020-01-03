@@ -14,17 +14,8 @@ import java.util.concurrent.ExecutionException;
 
 /* -------------------------------------------------------------------------- */
 
-/**
- * TODO: document
- */
 public class Main
 {
-    /**
-     * TODO: document
-     *
-     * @param args TODO: document
-     * @throws IOException TODO: document
-     */
     public static void main(String[] args)
         throws ExecutionException, InterruptedException, IOException
     {
@@ -33,11 +24,6 @@ public class Main
             final var out = new PrintWriter(new OutputStreamWriter(System.out))
         )
         {
-            // hack: suppress "illegal reflective access" warnings
-
-//            System.err.close();
-//            System.setErr(System.out);
-
             // check usage and parse arguments
 
             final var serverAddress = parseArgs(args);
@@ -59,12 +45,6 @@ public class Main
         }
     }
 
-    /**
-     * TODO: document
-     *
-     * @param args TODO: document
-     * @return TODO: document
-     */
     private static Address parseArgs(String[] args)
     {
         // check number of arguments

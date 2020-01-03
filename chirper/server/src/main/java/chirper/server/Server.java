@@ -56,12 +56,12 @@ public class Server implements AutoCloseable
         this.chirpStore = new ChirpStore();
 
         this.network.registerHandler(
-            Config.CLIENT_GET_MSG_NAME,
+            Config.CLIENT_MSG_TYPE_GET,
             this::clientGetHandler
         );
 
         this.network.registerHandler(
-            Config.CLIENT_PUBLISH_MSG_NAME,
+            Config.CLIENT_MSG_TYPE_PUBLISH,
             this::clientPublishHandler
         );
     }

@@ -7,31 +7,21 @@ package chirper.shared;
 public class Config
 {
     /**
-     * TODO: document
-     *
-     * Just something necessary that must be the same in client and server. We
-     * don't really use it for anything fancy.
-     */
-    public static final String NETTY_CLUSTER_NAME = "chirper";
-
-    /**
-     * TODO: document
+     * The maximum number of chirps that a "get" command retrieves.
      */
     public static final int CHIRPS_PER_GET = 3;
 
     /**
-     * TODO: document
-     *
-     * Sent from client to server and vice-versa.
+     * "Type" of messages representing a "get" command, sent from clients to
+     * servers.
      */
-    public static final String CLIENT_GET_MSG_NAME = "c-get";
+    public static final String CLIENT_MSG_TYPE_GET = "c-get";
 
     /**
-     * TODO: document
-     *
-     * Sent from client to server and vice-versa.
+     * "Type" of messages representing a "publish" command, sent from clients to
+     * servers.
      */
-    public static final String CLIENT_PUBLISH_MSG_NAME = "c-publish";
+    public static final String CLIENT_MSG_TYPE_PUBLISH = "c-publish";
 
     /**
      * TODO: document
