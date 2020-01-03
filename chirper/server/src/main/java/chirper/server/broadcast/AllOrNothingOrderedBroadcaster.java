@@ -351,7 +351,7 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
                 });
             }
             else {
-                this.coordinatorLog.appendEntry(new Commit(serverNetwork.getLocalServerId(), id));
+                this.coordinatorLog.appendEntry(new Abort(serverNetwork.getLocalServerId(), id));
                 askToRollback(ackFuture,id,value);
             }
         }).thenApply(v -> true);
