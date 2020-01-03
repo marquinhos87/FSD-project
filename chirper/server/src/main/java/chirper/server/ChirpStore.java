@@ -70,7 +70,7 @@ public class ChirpStore
         }
         else
         {
-            set = new TreeSet<>(CHIRP_AGE_COMPARATOR);
+            set = new TreeSet<>();
             this.chirpsByTopic.put(topic, set);
         }
 

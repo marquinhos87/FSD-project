@@ -9,7 +9,7 @@ import java.util.Objects;
 
 /* -------------------------------------------------------------------------- */
 
-public class Chirp implements Serializable
+public class Chirp implements Serializable, Comparable< Chirp >
 {
     private final ServerId serverId;
     private final long timestamp;
@@ -35,6 +35,33 @@ public class Chirp implements Serializable
     public String getText()
     {
         return this.text;
+    }
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        return
+            obj != null &&
+                this.getClass() == obj.getClass() &&
+                this.getTimestamp() == ((Chirp)obj).getTimestamp() &&
+                this.getServerId() == ((Chirp)obj).getServerId();
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash(this.getTimestamp(), this.getServerId());
+    }
+
+    @Override
+    public int compareTo(Chirp other)
+    {
+        final var i = Long.compare(this.getTimestamp(), other.getTimestamp());
+
+        if (i != 0)
+            return i;
+        else
+            return this.getServerId().compareTo(other.getServerId());
     }
 }
 
