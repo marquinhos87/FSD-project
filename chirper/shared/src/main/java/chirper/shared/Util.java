@@ -5,6 +5,7 @@ package chirper.shared;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /* -------------------------------------------------------------------------- */
 
@@ -39,13 +40,19 @@ public class Util
         return INLINE_TOPIC_PATTERN.matcher(chirp).find();
     }
 
-    public static Set< String > getChirpTopics(CharSequence chirp)
+    public static Stream< String > getChirpTopicsStream(CharSequence chirp)
     {
         return
             INLINE_TOPIC_PATTERN
                 .matcher(chirp)
                 .results()
-                .map(mr -> mr.group(1))
+                .map(mr -> mr.group(1));
+    }
+
+    public static Set< String > getChirpTopics(CharSequence chirp)
+    {
+        return
+            getChirpTopicsStream(chirp)
                 .collect(Collectors.toUnmodifiableSet());
     }
 }
