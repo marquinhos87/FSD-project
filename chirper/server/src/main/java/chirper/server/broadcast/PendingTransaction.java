@@ -12,7 +12,7 @@ public class PendingTransaction<T> {
     public long id;
     public T value;
     private final Set<ServerId> ackedServerIds;
-    private final Set< ServerId > votedServerIds;
+    public final Set< ServerId > votedServerIds;
     public final CompletableFuture< Boolean > onAllAcked;
     public final CompletableFuture< Boolean > onAllVoted;
 
