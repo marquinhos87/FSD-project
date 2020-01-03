@@ -6,9 +6,9 @@ import chirper.server.network.ServerNetwork;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-public class UnorderedBroadcaster<T> extends Broadcaster<T>
+public class BasicBroadcaster<T> extends Broadcaster<T>
 {
-    public UnorderedBroadcaster(
+    public BasicBroadcaster(
         ServerNetwork serverNetwork,
         Class<T> messagePayloadClass,
         Consumer<T> onMessageReceived

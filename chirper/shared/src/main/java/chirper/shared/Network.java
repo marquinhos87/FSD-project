@@ -1,4 +1,6 @@
-package chirper.server.network;
+/* -------------------------------------------------------------------------- */
+
+package chirper.shared;
 
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
@@ -6,7 +8,6 @@ import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Serializer;
 import io.atomix.utils.serializer.SerializerBuilder;
-import org.apache.commons.math3.analysis.function.Add;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -14,6 +15,8 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+
+/* -------------------------------------------------------------------------- */
 
 public class Network implements AutoCloseable
 {
@@ -105,8 +108,10 @@ public class Network implements AutoCloseable
     }
 
     @Override
-    public void close() throws Exception
+    public void close() throws ExecutionException, InterruptedException
     {
         this.messagingService.stop().get();
     }
 }
+
+/* -------------------------------------------------------------------------- */

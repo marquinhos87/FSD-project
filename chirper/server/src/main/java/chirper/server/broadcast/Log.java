@@ -1,69 +1,68 @@
+/* -------------------------------------------------------------------------- */
+
 package chirper.server.broadcast;
 
 import chirper.server.network.ServerId;
 import io.atomix.storage.journal.SegmentedJournal;
 import io.atomix.storage.journal.SegmentedJournalReader;
-import io.atomix.storage.journal.SegmentedJournalWriter;
 import io.atomix.utils.net.Address;
 import io.atomix.utils.serializer.Serializer;
 
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 
-public class Log<T> {
+/* -------------------------------------------------------------------------- */
 
-    private SegmentedJournal<Object> sj;
+public class Log<T>
+{
+    private SegmentedJournal<T> journal;
 
-    private Serializer s;
-
-    private SegmentedJournalWriter<Object> w;
-
-    public Log(String name, int id,Class<T> type)
+    public Log(String name, int id, Class<T> entryType)
     {
-        this.s = Serializer.builder().withTypes(type, Prepared.class, Commit.class, ServerId.class,
-            Address.class, Set.class).build();
+        final var serializer =
+            Serializer
+                .builder()
+                .withTypes(
+                    entryType, Prepared.class, Commit.class, ServerId.class,
+                    Address.class, Set.class
+                ).build();
 
-        this.sj =  SegmentedJournal.builder()
-            .withName(name+id)
-            .withSerializer(s)
-            .build();
-
-        this.w = sj.writer();
+        this.journal =
+            SegmentedJournal
+                .<T>builder()
+                .withName(name + id)
+                .withSerializer(serializer)
+                .build();
     }
 
-    public void add(Object o)
+    public SegmentedJournalReader<T> getReader()
     {
-        w.append(o);
-        CompletableFuture.supplyAsync(()->{
-            w.flush();
-            return null;
-        });
+        return this.journal.openReader(0);
     }
 
-    public Object get()
+    public void appendEntry(T entry)
     {
-        SegmentedJournalReader<Object> r = sj.openReader(0);
-        Object aux = null;
-        Object o = null;
-        while(r.hasNext()) {
-            aux = o;
-            o = r.next().entry();
-        }
-        r.close();
-        return aux;
+        journal.writer().append(entry);
+        journal.writer().flush();
     }
 
-    public void remove(int i)
-    {
-        w.truncate(w.getLastIndex()-i);
-        CompletableFuture.supplyAsync(()->{
-            w.flush();
-            return null;
-        });
-    }
-
-    public SegmentedJournalReader<Object> getSj() {
-        return this.sj.openReader(0);
-    }
-
+//    public T getEntry()
+//    {
+//        SegmentedJournalReader<T> r = journal.openReader(0);
+//        T aux = null;
+//        T o = null;
+//        while(r.hasNext()) {
+//            aux = o;
+//            o = r.next().entry();
+//        }
+//        r.close();
+//        return aux;
+//    }
+//
+//    public void keepLast(int count)
+//    {
+//        journal.writer().truncate(journal.writer().getLastIndex() - count);
+//        journal.writer().flush();
+//    }
 }
+
+/* -------------------------------------------------------------------------- */

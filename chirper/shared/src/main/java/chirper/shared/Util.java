@@ -2,7 +2,6 @@
 
 package chirper.shared;
 
-import java.io.PrintWriter;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -48,20 +47,6 @@ public class Util
                 .results()
                 .map(mr -> mr.group(1))
                 .collect(Collectors.toUnmodifiableSet());
-    }
-
-    // output
-
-    public static void printWarning(PrintWriter writer, String text)
-    {
-        writer.format("\033[33m%s\033[0m\n", text);
-        writer.flush();
-    }
-
-    public static void printError(PrintWriter writer, String text)
-    {
-        writer.format("\033[31m%s\033[0m\n", text);
-        writer.flush();
     }
 }
 

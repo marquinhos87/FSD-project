@@ -2,8 +2,6 @@
 
 package chirper.client;
 
-import chirper.shared.Util;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -14,31 +12,17 @@ import java.util.stream.Collectors;
 
 /* -------------------------------------------------------------------------- */
 
-/**
- * TODO: document
- */
 public class Prompt
 {
     private static final Pattern COMMAND_PATTERN = Pattern.compile(
         "^\\s*!\\s*(?<command>\\w*)(?<args>\\s*.*)$"
     );
 
-    // TODO: document
     private final Client client;
 
-    // TODO: document
     private final BufferedReader in;
-
-    // TODO: document
     private final PrintWriter out;
 
-    /**
-     * TODO: document
-     *
-     * @param client TODO: document
-     * @param in TODO: document
-     * @param out TODO: document
-     */
     public Prompt(Client client, BufferedReader in, PrintWriter out)
     {
         this.client = Objects.requireNonNull(client);
@@ -47,11 +31,6 @@ public class Prompt
         this.out = Objects.requireNonNull(out);
     }
 
-    /**
-     * TODO: document
-     *
-     * @throws IOException TODO: document
-     */
     public void inputLoop() throws IOException
     {
         while (true)
@@ -68,7 +47,7 @@ public class Prompt
             if (line == null)
             {
                 // no more input, exit input loop
-                Util.printWarning(this.out, "Exiting...");
+                this.printWarning("Exiting...");
                 break;
             }
 
@@ -95,16 +74,9 @@ public class Prompt
                 case "get":
 
                     if (!args.isBlank())
-                    {
-                        Util.printError(
-                            this.out,
-                            "Command 'get' does not accept arguments."
-                        );
-                    }
+                        this.printError("Command 'get' does not accept arguments.");
                     else
-                    {
                         this.handleGet();
-                    }
 
                     break;
 
@@ -117,8 +89,7 @@ public class Prompt
 
                 default:
 
-                    Util.printError(
-                        this.out,
+                    this.printError(
                         "Unknown command, must be 'get', 'sub', or 'subscribe'."
                     );
 
@@ -145,7 +116,7 @@ public class Prompt
         }
         catch (Exception e)
         {
-            Util.printError(this.out, e.getMessage());
+            this.printError(e.getMessage());
             return;
         }
 
@@ -153,8 +124,7 @@ public class Prompt
 
         if (chirps.isEmpty())
         {
-            Util.printWarning(
-                this.out,
+            this.printWarning(
                 this.client.getSubscribedTopics().isEmpty()
                     ? "No chirps exist."
                     : "No chirps exist for any of your subscribed topics."
@@ -183,7 +153,7 @@ public class Prompt
         }
         catch (IllegalArgumentException e)
         {
-            Util.printError(this.out, e.getMessage());
+            this.printError(e.getMessage());
         }
     }
 
@@ -195,19 +165,21 @@ public class Prompt
         }
         catch (Exception e)
         {
-            Util.printError(this.out, e.getMessage());
+            this.printError(e.getMessage());
         }
     }
 
-//    private void handleLogin()
-//    {
-//        // TODO: implement
-//    }
-//
-//    private void handleRegister()
-//    {
-//        // TODO: implement
-//    }
+    private void printWarning(String text)
+    {
+        this.out.format("\033[33m%s\033[0m\n", text);
+        this.out.flush();
+    }
+
+    private void printError(String text)
+    {
+        this.out.format("\033[31m%s\033[0m\n", text);
+        this.out.flush();
+    }
 }
 
 /* -------------------------------------------------------------------------- */
