@@ -1,5 +1,8 @@
+/* -------------------------------------------------------------------------- */
+
 package chirper.server;
 
+import chirper.server.state.Chirp;
 import chirper.shared.Network;
 import chirper.server.network.ServerId;
 import chirper.server.network.ServerNetwork;
@@ -12,18 +15,15 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
+/* -------------------------------------------------------------------------- */
+
 public class Server implements AutoCloseable
 {
     private final Network network;
-    private final Broadcaster< String > broadcaster;
+    private final Broadcaster< Chirp > broadcaster;
 
     private final ChirpStore chirpStore;
 
-    /**
-     * TODO: document
-     *
-     * @param config TODO: document
-     */
     public Server(ServerConfig config)
     {
         this(
@@ -107,3 +107,5 @@ public class Server implements AutoCloseable
         this.chirpStore.addChirp(chirp);
     }
 }
+
+/* -------------------------------------------------------------------------- */

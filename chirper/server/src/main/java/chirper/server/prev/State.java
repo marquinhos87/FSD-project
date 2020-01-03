@@ -3,6 +3,7 @@
 package chirper.server.prev;
 
 import chirper.server.network.ServerId;
+import chirper.server.state.Chirp;
 import chirper.shared.Config;
 import chirper.shared.Util;
 
@@ -116,35 +117,6 @@ public class State
         // return chirps
 
         return Collections.unmodifiableList(latestChirps);
-    }
-
-    private static class Chirp
-    {
-        private final ServerId serverId;
-        private final long timestamp;
-        private final String text;
-
-        public Chirp(ServerId serverId, long timestamp, String text)
-        {
-            this.serverId = Objects.requireNonNull(serverId);
-            this.timestamp = timestamp;
-            this.text = Objects.requireNonNull(text);
-        }
-
-        public ServerId getServerId()
-        {
-            return this.serverId;
-        }
-
-        public long getTimestamp()
-        {
-            return this.timestamp;
-        }
-
-        public String getText()
-        {
-            return this.text;
-        }
     }
 }
 
