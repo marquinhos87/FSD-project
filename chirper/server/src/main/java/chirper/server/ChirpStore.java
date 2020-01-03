@@ -58,6 +58,10 @@ public class ChirpStore
             .forEachOrdered(topic -> this.addChirpUnderTopic(topic, chirp));
 
         this.latestTimestamp = chirp.getTimestamp();
+
+        // persist state
+
+        this.writeState();
     }
 
     private void addChirpUnderTopic(String topic, Chirp chirp)
@@ -84,10 +88,6 @@ public class ChirpStore
         // add new chirp
 
         set.add(chirp);
-
-        // persist state
-
-        this.writeState();
     }
 
     public List< String > getLatestChirps(String[] topics)
