@@ -69,6 +69,7 @@ public class Server implements AutoCloseable
     public void start() throws ExecutionException, InterruptedException
     {
         this.network.start();
+        this.broadcaster.repeatTransactions();
     }
 
     @Override

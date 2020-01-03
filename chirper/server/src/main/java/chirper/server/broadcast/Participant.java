@@ -1,5 +1,7 @@
 package chirper.server.broadcast;
 
+import chirper.server.network.ServerId;
+
 import java.util.concurrent.CompletableFuture;
 
 public class Participant<T> {
@@ -10,7 +12,7 @@ public class Participant<T> {
 
     private final T thing;
 
-    private final CompletableFuture< Void > pendingDecision;
+    public final CompletableFuture< Void > pendingDecision;
 
     public Participant(
         CompletableFuture< Void > pendingDecision,
@@ -27,9 +29,9 @@ public class Participant<T> {
         checkDecision();
     }
 
-    public void prepare() {
+    public void prepare(ServerId serverId, long twopc_id) {
 
-        log.add(new Prepared());
+        log.add(new Prepared(serverId,twopc_id));
     }
 
     public void setDecision(Msg decision)
@@ -54,10 +56,10 @@ public class Participant<T> {
         // TODO
     }
 
-    public void commit()
+    public void commit(ServerId serverId, long twopc_id)
     {
         // TODO
-        this.log.add(new Commit());
+        this.log.add(new Commit(serverId,twopc_id));
     }
 
     private void checkDecision()

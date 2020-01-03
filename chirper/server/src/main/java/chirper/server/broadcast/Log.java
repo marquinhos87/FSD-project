@@ -62,4 +62,8 @@ public class Log<T> {
         });
     }
 
+    public SegmentedJournalReader<Object> getSj() {
+        return this.sj.openReader(0);
+    }
+
 }

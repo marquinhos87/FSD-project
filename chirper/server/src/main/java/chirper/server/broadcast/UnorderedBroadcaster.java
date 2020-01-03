@@ -21,6 +21,9 @@ public class UnorderedBroadcaster<T> extends Broadcaster<T>
     }
 
     @Override
+    public void repeatTransactions() {}
+
+    @Override
     public CompletableFuture< Boolean > broadcast(T value)
     {
         this.getOnMessageReceived().accept(value);

@@ -7,13 +7,14 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
-public class PendingTransaction {
+public class PendingTransaction<T> {
     private final int numRemoteServers;
-    private long id;
+    public long id;
+    public T value;
     private final Set<ServerId> ackedServerIds;
     private final Set< ServerId > votedServerIds;
-    private final CompletableFuture< Void > onAllAcked;
-    private final CompletableFuture< Void > onAllVoted;
+    public final CompletableFuture< Void > onAllAcked;
+    public final CompletableFuture< Void > onAllVoted;
 
     /**
      * TODO: document
@@ -25,10 +26,14 @@ public class PendingTransaction {
     (
         int numRemoteServers,
         CompletableFuture< Void > onAllAcked,
-        CompletableFuture< Void > onAllVoted
+        CompletableFuture< Void > onAllVoted,
+        long id,
+        T value
     )
     {
         this.numRemoteServers = numRemoteServers;
+        this.id = id;
+        this.value = value;
         this.ackedServerIds = new HashSet<>();
         this.votedServerIds = new HashSet<>();
         this.onAllAcked = Objects.requireNonNull(onAllAcked);
