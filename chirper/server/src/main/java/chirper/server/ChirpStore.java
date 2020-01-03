@@ -56,6 +56,8 @@ public class ChirpStore
     {
         Util.getChirpTopicsStream(chirp.getText())
             .forEachOrdered(topic -> this.addChirpUnderTopic(topic, chirp));
+
+        this.latestTimestamp = chirp.getTimestamp();
     }
 
     private void addChirpUnderTopic(String topic, Chirp chirp)
