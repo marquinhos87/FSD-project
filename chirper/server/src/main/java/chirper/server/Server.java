@@ -73,7 +73,7 @@ public class Server implements AutoCloseable
     }
 
     @Override
-    public void close() throws Exception
+    public void close() throws ExecutionException, InterruptedException
     {
         this.network.close();
     }
