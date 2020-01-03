@@ -3,12 +3,10 @@
 package chirper.server;
 
 import chirper.server.network.ServerId;
-import chirper.server.state.Chirp;
 import chirper.shared.Config;
 import chirper.shared.Util;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
