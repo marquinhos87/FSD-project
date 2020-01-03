@@ -7,31 +7,22 @@ import java.util.Objects;
 /* -------------------------------------------------------------------------- */
 
 /**
- * TODO: document
+ * An integer value that uniquely identifies a server.
  *
- * Just a wrapper around an int. Exists for type safety.
+ * This class is a simple wrapper around an {@code int}, and exists for extra
+ * type safety.
  *
- * Instances of this class are immutable.
+ * Instances of this class are immutable and comparable.
  */
 public class ServerId implements Comparable< ServerId >
 {
     private final int value;
 
-    /**
-     * TODO: document
-     *
-     * @param value TODO: document
-     */
     public ServerId(int value)
     {
         this.value = value;
     }
 
-    /**
-     * TODO: document
-     *
-     * @return TODO: document
-     */
     public int getValue()
     {
         return this.value;
