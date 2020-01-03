@@ -305,12 +305,14 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
             firstPhase.thenAccept(v ->
             {
                 if (v.equals("Commit")) {
+                    this.coordinatorLog.appendEntry(new Commit(serverNetwork.getLocalServerId(), p.id));
                     askToCommit(p.onAllAcked, p.id).thenRun(() ->
                     {
                         getOnMessageTransmitted().accept((T) p.value);
                     });
                 }
                 else {
+                    this.coordinatorLog.appendEntry(new Abort(serverNetwork.getLocalServerId(), p.id));
                     askToRollback(p.onAllAcked,p.id,(T) p.value);
                 }
             });
