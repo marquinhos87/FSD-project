@@ -24,14 +24,14 @@ public class Participant<T> {
         this.log = log;
         this.thing = chirp;
 
-        log.add(this.thing);
+        log.appendEntry(this.thing);
 
         checkDecision();
     }
 
     public void prepare(ServerId serverId, long twopc_id) {
 
-        log.add(new Prepared(serverId,twopc_id));
+        log.appendEntry(new Prepared(serverId, twopc_id));
     }
 
     public void setDecision(Msg decision)
@@ -54,13 +54,13 @@ public class Participant<T> {
     public void beginRollBack(ServerId serverId, long twopc_id)
     {
         // TODO
-        this.log.add(new Abort(serverId,twopc_id));
+        this.log.appendEntry(new Abort(serverId, twopc_id));
     }
 
     public void commit(ServerId serverId, long twopc_id)
     {
         // TODO
-        this.log.add(new Commit(serverId,twopc_id));
+        this.log.appendEntry(new Commit(serverId, twopc_id));
     }
 
     private void checkDecision()

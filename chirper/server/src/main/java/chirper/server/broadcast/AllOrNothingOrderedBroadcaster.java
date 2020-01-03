@@ -5,7 +5,6 @@ import chirper.server.network.ServerNetwork;
 import chirper.shared.Config;
 import io.atomix.storage.journal.SegmentedJournalReader;
 
-import java.net.ConnectException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
@@ -94,7 +93,7 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
         this.coordinating = new HashMap<>();
 
         this.coordinatorLog = new Log("coordinator",serverNetwork.getLocalServerId().getValue(),type);
-        SegmentedJournalReader<Object> sjr = this.coordinatorLog.getSj();
+        SegmentedJournalReader<Object> sjr = this.coordinatorLog.getReader();
         String s = "";
         Object aux;
         while(sjr.hasNext()) {
@@ -126,7 +125,7 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
         }
 
         this.participantLog = new Log("participant",serverNetwork.getLocalServerId().getValue(),type);
-        sjr = this.participantLog.getSj();
+        sjr = this.participantLog.getReader();
         while(sjr.hasNext()) {
             aux = sjr.next().entry();
             if(aux instanceof String)
@@ -270,8 +269,8 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
     {
         // Insert participants into Coordinator Log
 
-        this.coordinatorLog.add(value);
-        this.coordinatorLog.add(new Prepared(serverNetwork.getLocalServerId(),twopc_id));
+        this.coordinatorLog.appendEntry(value);
+        this.coordinatorLog.appendEntry(new Prepared(serverNetwork.getLocalServerId(), twopc_id));
 
         // send chirp to servers
 
@@ -402,7 +401,7 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
         return firstPhase.thenAccept(v ->
         {
             if (v.equals("Commit")){
-                this.coordinatorLog.add(new Commit(serverNetwork.getLocalServerId(),id));
+                this.coordinatorLog.appendEntry(new Commit(serverNetwork.getLocalServerId(), id));
                 askToCommit(ackFuture, id).thenRun(() ->
                 {
                     getOnMessageReceived().accept(value);
@@ -411,7 +410,7 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
             }
             else {
                 System.out.println(v);
-                this.coordinatorLog.add(new Commit(serverNetwork.getLocalServerId(),id));
+                this.coordinatorLog.appendEntry(new Commit(serverNetwork.getLocalServerId(), id));
                 askToRollback(ackFuture,id,value).thenRun(() ->
                 {
                     System.out.println("Abortou o 2PC.");
