@@ -121,7 +121,7 @@ public class Server implements AutoCloseable
             chirp.getTimestamp()
         );
 
-        this.chirpStore.addChirp(chirp.getText());
+        this.chirpStore.addChirp(chirp);
     }
 }
 
