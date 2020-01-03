@@ -284,9 +284,7 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
         );
 
         // (when we sent all reqs and received all acks, ...)
-        return sendFuture.thenAcceptAsync(v -> voteFuture.).thenApply(v->"Commit");
-
-
+        return sendFuture.thenAcceptAsync(v -> voteFuture.thenRun(()->{})).thenApply(v->"Commit").exceptionally(v->"Abort");
 
         /*return sendFuture.thenAcceptBothAsync(voteFuture, (v1, v2) -> {
             System.out.println("Recebeu todos os Votos.");
@@ -382,8 +380,8 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
             new PendingTransaction(this.serverNetwork.getRemoteServerIds().size(), ackFuture, voteFuture,id,value)
         );
 
-        this.coordinatorLog.add(value);
-        this.coordinatorLog.add(new Prepared(serverNetwork.getLocalServerId(),id));
+        this.coordinatorLog.appendEntry(value);
+        this.coordinatorLog.appendEntry(new Prepared(serverNetwork.getLocalServerId(),id));
 
         var firstPhase = askToVote(voteFuture,value,id);
 
