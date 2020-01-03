@@ -2,6 +2,7 @@
 
 package chirper.server.network;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 /* -------------------------------------------------------------------------- */
@@ -14,7 +15,7 @@ import java.util.Objects;
  *
  * Instances of this class are immutable and comparable.
  */
-public class ServerId implements Comparable< ServerId >
+public class ServerId implements Comparable< ServerId >, Serializable
 {
     private final int value;
 
