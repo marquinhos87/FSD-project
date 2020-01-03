@@ -1,7 +1,7 @@
 
 localServer:
-  id: 2
-  port: 7002
+  id: 3
+  port: 7003
 
 remoteServers:
 
@@ -10,5 +10,5 @@ remoteServers:
     id: 1
 
   - host: localhost
-    port: 7003
-    id: 3
+    port: 7002
+    id: 2

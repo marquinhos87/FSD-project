@@ -13,8 +13,8 @@ public class PendingTransaction<T> {
     public T value;
     private final Set<ServerId> ackedServerIds;
     private final Set< ServerId > votedServerIds;
-    public final CompletableFuture< Void > onAllAcked;
-    public final CompletableFuture< Void > onAllVoted;
+    public final CompletableFuture< Boolean > onAllAcked;
+    public final CompletableFuture< Boolean > onAllVoted;
 
     /**
      * TODO: document
@@ -25,8 +25,8 @@ public class PendingTransaction<T> {
     public PendingTransaction
     (
         int numRemoteServers,
-        CompletableFuture< Void > onAllAcked,
-        CompletableFuture< Void > onAllVoted,
+        CompletableFuture< Boolean > onAllAcked,
+        CompletableFuture< Boolean > onAllVoted,
         long id,
         T value
     )

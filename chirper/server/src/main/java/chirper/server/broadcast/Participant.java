@@ -10,7 +10,7 @@ public class Participant<T> {
 
     private final Log log;
 
-    private final T thing;
+    public final T thing;
 
     public final CompletableFuture< Void > pendingDecision;
 
@@ -51,9 +51,10 @@ public class Participant<T> {
         return this.decision;
     }
 
-    public void beginRollBack()
+    public void beginRollBack(ServerId serverId, long twopc_id)
     {
         // TODO
+        this.log.add(new Abort(serverId,twopc_id));
     }
 
     public void commit(ServerId serverId, long twopc_id)

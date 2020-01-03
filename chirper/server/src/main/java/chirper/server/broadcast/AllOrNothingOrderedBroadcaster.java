@@ -5,10 +5,9 @@ import chirper.server.network.ServerNetwork;
 import chirper.shared.Config;
 import io.atomix.storage.journal.SegmentedJournalReader;
 
+import java.net.ConnectException;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.*;
 import java.util.function.Consumer;
 
 /**
@@ -89,22 +88,17 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
     )
     {
         super(serverNetwork,onMessageReceived);
-
         this.serverNetwork = serverNetwork;
 
         this.participating = new HashMap<>();
-
         this.coordinating = new HashMap<>();
 
         this.coordinatorLog = new Log("coordinator",serverNetwork.getLocalServerId().getValue(),type);
-
         SegmentedJournalReader<Object> sjr = this.coordinatorLog.getSj();
-
         String s = "";
-        Object aux = null;
-        if(sjr.hasNext()) aux = sjr.next().entry();
-
+        Object aux;
         while(sjr.hasNext()) {
+            aux = sjr.next().entry();
             if(aux instanceof String)
                 s = (String) aux;
             else if(aux instanceof Prepared) {
@@ -112,61 +106,53 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
                     ((Prepared) aux).twopc_id,
                     new PendingTransaction(
                         serverNetwork.getRemoteServerIds().size(),
-                        new CompletableFuture<Void>(),
-                        new CompletableFuture<Void>(),
+                        new CompletableFuture<>(),
+                        new CompletableFuture<>(),
                         ((Prepared) aux).twopc_id,
                         s)
                 );
+                n_twopc = Math.max(n_twopc,((Prepared) aux).twopc_id);
             }
             else if(aux instanceof Commit) {
-                this.coordinating.remove(((Commit) aux).twopc_id);
+                if(this.coordinating.containsKey(((Commit) aux).twopc_id))
+                    this.coordinating.remove(((Commit) aux).twopc_id);
+                n_twopc = Math.max(n_twopc,((Commit) aux).twopc_id);
             }
             else if(aux instanceof Abort) {
-                this.coordinating.remove(((Abort) aux).twopc_id);
+                if(this.coordinating.containsKey(((Abort) aux).twopc_id))
+                    this.coordinating.remove(((Abort) aux).twopc_id);
+                n_twopc = Math.max(n_twopc, ((Abort) aux).twopc_id);
             }
-            aux = sjr.next().entry();
         }
 
         this.participantLog = new Log("participant",serverNetwork.getLocalServerId().getValue(),type);
-
         sjr = this.participantLog.getSj();
-        if(sjr.hasNext()) aux = sjr.next().entry();
-
         while(sjr.hasNext()) {
+            aux = sjr.next().entry();
             if(aux instanceof String)
                 s = (String) aux;
-            else if(aux instanceof Prepared) {
+            else if(aux instanceof Prepared)
                 this.participating.put(
                     new pair(((Prepared) aux).serverId,((Prepared) aux).twopc_id),
                     new Participant(new CompletableFuture<>(),this.participantLog,s));
-            }
-            else if(aux instanceof Commit) {
-                this.participating.remove(new pair(((Commit) aux).serverId,((Commit) aux).twopc_id));
-            }
-            else if(aux instanceof Abort) {
-                this.participating.remove(new pair(((Commit) aux).serverId,((Commit) aux).twopc_id));
-            }
-            aux = sjr.next().entry();
+            else if(aux instanceof Commit)
+                if(this.participating.containsKey(new pair(((Commit) aux).serverId,((Commit) aux).twopc_id)))
+                    this.participating.remove(new pair(((Commit) aux).serverId,((Commit) aux).twopc_id));
+            else if(aux instanceof Abort)
+                if(this.participating.containsKey(new pair(((Commit) aux).serverId,((Commit) aux).twopc_id)))
+                    this.participating.remove(new pair(((Commit) aux).serverId,((Commit) aux).twopc_id));
         }
 
         serverNetwork.registerPayloadType(MsgAck.class);
-
         serverNetwork.registerPayloadType(MsgCommit.class);
-
         serverNetwork.registerPayloadType(MsgPrepare.class);
-
         serverNetwork.registerPayloadType(MsgRollback.class);
-
         serverNetwork.registerPayloadType(ServerId.class);
 
         serverNetwork.registerHandler(Config.SERVER_PUBLISH_MSG_NAME,this::handleServerPublish);
-
         serverNetwork.registerHandler(Config.SERVER_ACK_PUBLICATION_MSG_NAME, this::handleServerAck);
-
         serverNetwork.registerHandler(Config.SERVER_VOTE_OK_MSG_NAME, this::handleServerOk);
-
         serverNetwork.registerHandler(Config.SERVER_COMMIT_PUBLICATION_MSG_NAME, this::handleServerCommit);
-
         serverNetwork.registerHandler(Config.SERVER_ROLLBACK_PUBLICATION_MSG_NAME, this::handleServerRollback);
     }
 
@@ -204,11 +190,7 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
 
         // Vote and wait for outcome, Coordinator decision
 
-        waitOutcome(decision,serverId,value.twopc_id);
-
-        getOnMessageReceived().accept((T) value.content);
-
-        //this.participating.remove(new pair(value.serverId,value.twopc_id));
+        waitOutcome(decision,serverId,value.twopc_id, (T) value.content);
     }
 
     /**
@@ -238,9 +220,11 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
     private void waitOutcome(
         CompletableFuture< Void > decision,
         ServerId serverId,
-        long twopc_id
+        long twopc_id,
+        T value
     )
     {
+        //if(serverNetwork.getLocalServerId().getValue()==2) System.exit(-1);
          System.out.println("Waiting for Outcome");
         // send acknowledgment, Vote OK - First phase answer
 
@@ -262,11 +246,11 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
                 if (action instanceof MsgCommit)
                 {
                     System.out.println("Decision: Commit Chirp -> ");
-
+                    getOnMessageReceived().accept((T) value);
                     participant.commit(serverId,twopc_id);
                 }
                 else {
-                    participant.beginRollBack();
+                    participant.beginRollBack(serverId,twopc_id);
                 }
 
                 // send acknowledgment - Two Phase Commit Over
@@ -282,13 +266,12 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
 
     }
 
-    public CompletableFuture< String > askToVote(CompletableFuture< Void > voteFuture, T value, long twopc_id)
+    public CompletableFuture< String > askToVote(CompletableFuture< Boolean > voteFuture, T value, long twopc_id)
     {
         // Insert participants into Coordinator Log
 
-        //coordinatorLog.add(serverNetwork.); // Nao funciona a leitura do log depois
-
-        coordinatorLog.add(value);
+        this.coordinatorLog.add(value);
+        this.coordinatorLog.add(new Prepared(serverNetwork.getLocalServerId(),twopc_id));
 
         // send chirp to servers
 
@@ -307,34 +290,19 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
         );
 
         // (when we sent all reqs and received all acks, ...)
+        return sendFuture.thenAccept(v -> {
+            voteFuture.thenApply(v2 -> "Commit").exceptionally(v3 -> "Abort");
+        }).thenApply(v -> "Commit").exceptionally(v -> "Abort");
 
-        return sendFuture.thenAccept( v -> {
+        /*return sendFuture.thenAcceptBothAsync(voteFuture, (v1, v2) -> {
             System.out.println("Recebeu todos os Votos.");
-            this.participantLog.add(value);
-            this.participantLog.add(new Prepared(serverNetwork.getLocalServerId(),twopc_id));
-        }).thenApply(v -> "Commit")
-            .exceptionally(v -> {
-                System.out.println("Nao recebeu todos os Votos.");
-                return "Abort";
-            });
-        /*return sendFuture.thenAcceptBoth(voteFuture, (v1, v2) -> {
-            System.out.println("Recebeu todos os Votos.");
-            this.participantLog.add(value);
-            this.participantLog.add(new Prepared());
         })
-            .thenApply(v -> "Commit")
-            .exceptionally(v ->
-            {
-                System.out.println("Nao recebeu todos os Votos.");
-                return "Abort";
-            });*/
+            .thenApply(v -> "Commit");*/
     }
 
-    public CompletableFuture< Void > askToCommit(CompletableFuture< Void > ackFuture, long twopc_id)
+    public CompletableFuture< Void > askToCommit(CompletableFuture< Boolean > ackFuture, long twopc_id)
     {
-        this.coordinatorLog.add(new Commit(serverNetwork.getLocalServerId(),twopc_id));
-
-        final var commit =new MsgCommit(this.serverNetwork.getLocalServerId(),twopc_id);
+        final var commit = new MsgCommit(this.serverNetwork.getLocalServerId(),twopc_id);
 
         final var sendCommit = CompletableFuture.allOf(
             this.serverNetwork.getRemoteServerIds()
@@ -349,16 +317,14 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
 
         // Gather all Acks of the second phase
 
-        return sendCommit.thenAcceptBoth(ackFuture, (v3, v4) -> {
+        return sendCommit.thenAcceptBothAsync(ackFuture, (v3, v4) -> {
             System.out.println("Recebeu todos os ACK.");
-            this.participantLog.add(new Commit(serverNetwork.getLocalServerId(),twopc_id));
         });
     }
 
-    private CompletableFuture< Void > askToRollback(CompletableFuture<Void> ackFuture, long twopc_id, T value)
+    private CompletableFuture< Boolean > askToRollback(CompletableFuture<Boolean> ackFuture, long twopc_id, T value)
     {
-        this.coordinatorLog.add(new Abort(serverNetwork.getLocalServerId(),twopc_id));
-
+        System.out.println("Chega aqui?");
         final var abort = new MsgRollback(this.serverNetwork.getLocalServerId(),twopc_id,2);
 
         final var sendRollback = CompletableFuture.allOf(
@@ -374,10 +340,13 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
 
         // Gather all Acks of the rollback
 
-        return sendRollback.thenAcceptBoth(ackFuture, (v3, v4) -> {
+        /*return sendRollback.thenAcceptAsync(v -> {
             System.out.println("Recebeu todos os Rollbacks.");
-            this.participantLog.add(new Abort(serverNetwork.getLocalServerId(),twopc_id));
-        });
+        }).thenApply(v -> true).exceptionally(v -> true);*/
+
+        return sendRollback.thenAccept(v -> {
+            ackFuture.thenApply(v2 -> true).exceptionally(v3 -> false);
+        }).thenApply(v -> true).exceptionally(v -> false);
     }
 
     public void repeatTransactions() {
@@ -398,7 +367,8 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
         for(Map.Entry<pair,Participant> aux: this.participating.entrySet()) {
             pair pp = aux.getKey();
             Participant p = aux.getValue();
-            waitOutcome(p.pendingDecision,pp.serverid,pp.twopc_id);
+            System.out.println(p.thing);
+            waitOutcome(p.pendingDecision,pp.serverid,pp.twopc_id, (T) p.thing);
         }
     }
 
@@ -407,9 +377,9 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
     {
         final var id = this.n_twopc++;
 
-        var voteFuture = new CompletableFuture< Void >();
+        var voteFuture = new CompletableFuture< Boolean >();
 
-        var ackFuture = new CompletableFuture< Void >();
+        var ackFuture = new CompletableFuture< Boolean >();
 
         // create pending chirp
 
@@ -420,14 +390,64 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
 
         var firstPhase = askToVote(voteFuture,value,id);
 
-        return firstPhase.thenAccept(v ->
+        /*return firstPhase.thenAccept(v ->
             {
                 askToCommit(ackFuture,id).thenRun(()->
                 {
-                    //this.coordinating.remove(id);
                     getOnMessageReceived().accept(value);
                     System.out.println("Terminou o 2PC.");
                 });
-            }).thenApply(v -> true);
+            }).thenApply(v -> true);*/
+
+        return firstPhase.thenAccept(v ->
+        {
+            if (v.equals("Commit")){
+                this.coordinatorLog.add(new Commit(serverNetwork.getLocalServerId(),id));
+                askToCommit(ackFuture, id).thenRun(() ->
+                {
+                    getOnMessageReceived().accept(value);
+                    System.out.println("Terminou o 2PC.");
+                });
+            }
+            else {
+                System.out.println(v);
+                this.coordinatorLog.add(new Commit(serverNetwork.getLocalServerId(),id));
+                askToRollback(ackFuture,id,value).thenRun(() ->
+                {
+                    System.out.println("Abortou o 2PC.");
+                });
+            }
+        }).thenApply(v -> true);
+
+
+        /*try {
+            String string = firstPhase.get(2, TimeUnit.SECONDS);
+            System.out.println(string);
+            if (string.equals("Commit")){
+                this.coordinatorLog.add(new Commit(serverNetwork.getLocalServerId(),id));
+                askToCommit(ackFuture, id).thenRun(() ->
+                {
+                    getOnMessageReceived().accept(value);
+                    System.out.println("Terminou o 2PC.");
+                });
+                return firstPhase.thenApply(v -> true);
+            }
+            else {
+                System.out.println(string);
+                this.coordinatorLog.add(new Commit(serverNetwork.getLocalServerId(),id));
+                askToRollback(ackFuture,id,value).thenRun(() ->
+                {
+                    System.out.println("Abortou o 2PC.");
+                });
+                return firstPhase.thenApply(v -> false);
+            }
+        } catch (InterruptedException | TimeoutException | ExecutionException e) {
+            this.coordinatorLog.add(new Commit(serverNetwork.getLocalServerId(),id));
+            askToRollback(ackFuture,id,value).thenRun(() ->
+            {
+                System.out.println("Abortou o 2PC.");
+            });
+            return firstPhase.thenApply(v -> false);*
+        }*/
     }
 }
