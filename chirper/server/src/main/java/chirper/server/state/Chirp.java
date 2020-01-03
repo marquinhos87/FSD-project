@@ -4,11 +4,12 @@ package chirper.server.state;
 
 import chirper.server.network.ServerId;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 /* -------------------------------------------------------------------------- */
 
-public class Chirp
+public class Chirp implements Serializable
 {
     private final ServerId serverId;
     private final long timestamp;
