@@ -255,9 +255,7 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
 
         // (when we sent all reqs and received all acks, ...)
         return sendFuture.thenAccept( v -> { }).thenApply(v -> "Commit")
-            .exceptionally(v -> {
-                return "Abort";
-            });
+            .exceptionally(v -> "Abort");
     }
 
     private CompletableFuture< Void > askToCommit(CompletableFuture< Boolean > ackFuture, long twopc_id)
@@ -308,9 +306,7 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
             {
                 askToCommit(p.onAllAcked,p.id).thenRun(()->
                 {
-                    this.coordinating.remove(p.id);
                     getOnMessageTransmitted().accept((T) p.value);
-                    System.out.println("Terminou o 2PC.");
                 });
             });
         }
