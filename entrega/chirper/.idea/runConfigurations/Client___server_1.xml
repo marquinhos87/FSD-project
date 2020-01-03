@@ -1,0 +1,17 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Client - server 1" type="Application" factoryName="Application">
+    <option name="MAIN_CLASS_NAME" value="chirper.client.Main" />
+    <module name="client" />
+    <option name="PROGRAM_PARAMETERS" value="localhost:7001" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="chirper.client.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
