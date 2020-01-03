@@ -2,7 +2,6 @@
 
 package chirper.server;
 
-import chirper.server.state.Chirp;
 import chirper.shared.Network;
 import chirper.server.network.ServerId;
 import chirper.server.network.ServerNetwork;
