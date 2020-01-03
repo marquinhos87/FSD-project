@@ -41,13 +41,15 @@ public class ChirpStore
 
     // maps topics to all chirps with that topic
     // (the same chirp can exist under more than one topic)
-    private final Map< String, SortedSet< Chirp > > chirpsByTopic;
+    private Map< String, SortedSet< Chirp > > chirpsByTopic;
+
+    private long latestTimestamp;
 
     public ChirpStore(ServerId localServerId)
         throws IOException, ClassNotFoundException
     {
         this.stateFilePath = Path.of("state-" + localServerId.getValue() + ".dat");
-        this.chirpsByTopic = readState(this.stateFilePath);
+        this.readState();
     }
 
     public void addChirp(Chirp chirp)
@@ -128,19 +130,28 @@ public class ChirpStore
         return chirps;
     }
 
-    private static Map< String, SortedSet< Chirp > > readState(
-        Path stateFilePath
-    ) throws IOException, ClassNotFoundException
+    public long getLatestTimestamp()
+    {
+        return this.latestTimestamp;
+    }
+
+    private void readState() throws IOException, ClassNotFoundException
     {
         if (!Files.exists(stateFilePath))
-            return new HashMap<>();
-
-        try (
-            final var f = new FileInputStream(stateFilePath.toFile());
-            final var o = new ObjectInputStream(f)
-        )
         {
-            return (Map< String, SortedSet< Chirp > >)o.readObject();
+            this.chirpsByTopic = new HashMap<>();
+            this.latestTimestamp = Long.MIN_VALUE;
+        }
+        else
+        {
+            try (
+                final var f = new FileInputStream(stateFilePath.toFile());
+                final var o = new ObjectInputStream(f)
+            )
+            {
+                this.chirpsByTopic = (Map< String, SortedSet< Chirp > >)o.readObject();
+                this.latestTimestamp = o.readLong();
+            }
         }
     }
 
@@ -154,6 +165,7 @@ public class ChirpStore
             )
             {
                 o.writeObject(this.chirpsByTopic);
+                o.writeLong(this.latestTimestamp);
             }
         }
         catch (Exception e)
