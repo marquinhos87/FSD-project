@@ -304,10 +304,15 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
             var firstPhase = askToVote(p.onAllVoted, (T) p.value,p.id);
             firstPhase.thenAccept(v ->
             {
-                askToCommit(p.onAllAcked,p.id).thenRun(()->
-                {
-                    getOnMessageTransmitted().accept((T) p.value);
-                });
+                if (v.equals("Commit")) {
+                    askToCommit(p.onAllAcked, p.id).thenRun(() ->
+                    {
+                        getOnMessageTransmitted().accept((T) p.value);
+                    });
+                }
+                else {
+                    askToRollback(p.onAllAcked,p.id,(T) p.value);
+                }
             });
         }
 
