@@ -9,7 +9,7 @@ public class Config
     /**
      * The maximum number of chirps that a "get" command retrieves.
      */
-    public static final int CHIRPS_PER_GET = 3;
+    public static final int CHIRPS_PER_GET = 10;
 
     /**
      * "Type" of messages representing a "get" command, sent from clients to
