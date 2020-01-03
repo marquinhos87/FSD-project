@@ -266,13 +266,8 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
 
     }
 
-    public CompletableFuture< String > askToVote(CompletableFuture< Boolean > voteFuture, T value, long twopc_id)
+    public CompletableFuture<String> askToVote(CompletableFuture< Boolean > voteFuture, T value, long twopc_id)
     {
-        // Insert participants into Coordinator Log
-
-        this.coordinatorLog.add(value);
-        this.coordinatorLog.add(new Prepared(serverNetwork.getLocalServerId(),twopc_id));
-
         // send chirp to servers
 
         var msg = new MsgPrepare<T>(this.serverNetwork.getLocalServerId(), twopc_id, value);
@@ -290,9 +285,9 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
         );
 
         // (when we sent all reqs and received all acks, ...)
-        return sendFuture.thenAccept(v -> {
-            voteFuture.thenApply(v2 -> "Commit").exceptionally(v3 -> "Abort");
-        }).thenApply(v -> "Commit").exceptionally(v -> "Abort");
+        return sendFuture.thenAcceptAsync(v -> voteFuture.).thenApply(v->"Commit");
+
+
 
         /*return sendFuture.thenAcceptBothAsync(voteFuture, (v1, v2) -> {
             System.out.println("Recebeu todos os Votos.");
@@ -387,6 +382,9 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
             id,
             new PendingTransaction(this.serverNetwork.getRemoteServerIds().size(), ackFuture, voteFuture,id,value)
         );
+
+        this.coordinatorLog.add(value);
+        this.coordinatorLog.add(new Prepared(serverNetwork.getLocalServerId(),id));
 
         var firstPhase = askToVote(voteFuture,value,id);
 
