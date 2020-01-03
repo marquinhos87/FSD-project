@@ -206,7 +206,7 @@ public class AllOrNothingOrderedBroadcaster<T> extends Broadcaster<T>
         T value
     )
     {
-        //if(serverNetwork.getLocalServerId().getValue()==2) System.exit(-1);
+        if(serverNetwork.getLocalServerId().getValue()==2) System.exit(-1);
          System.out.println("Waiting for Outcome");
         // send acknowledgment, Vote OK - First phase answer
 
