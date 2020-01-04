@@ -1,0 +1,109 @@
+% ---------------------------------------------------------------------------- %
+
+\section{Design}
+\label{sec:design}
+
+In this section, we describe the architecture and functioning of the developed system, identifying and justifying major design decisions.
+
+% ---------------------------------------------------------------------------- %
+
+\paragraph{System overview}
+
+% \alberto{How servers only act under the command of clients, and thus how we can remove clients from the discussion.}
+% \alberto{Network layout. Several servers in peer-to-peer. Clients connected to exactly one server each.}
+% \alberto{Properties of the network: FIFO channels, as underlying transport is TCP.}
+% \alberto{Assumption of an asynchronous distributed system, a bit relaxed due to the use of timeouts to detect dead nodes and network partitions.}
+
+The system is composed of \emph{client} and \emph{server} nodes. The set of server nodes is assumed to be known to every other server, and each server has a unique numerical identifier. Each client is, at any single time, connected to exactly one server, and every server may have zero or more clients connected to it. In contrast, every server is connected to all other servers, forming a fully connected peer-to-peer network. Clients perform operations on the system by submitting requests to the server to which they are connected, and communication between each client and its server is sequential --- a client may only have one outstanding request at any instant in time.
+
+Each request may be of one of two types: \texttt{publish} and \texttt{get}. A \texttt{publish} request submits a new chirp to the system, while a \texttt{get} request has the objective of obtaining the most recently published chirps for one or more given topics. The previously described global ordering constraints apply, and all clients must observe chirps in the same order regardless of the server to which they are connected.
+
+We first note that each server acts solely on behalf of its clients. As such, for simplicity of presentation, we omit clients from the discussion that follows and regard each server as autonomously generating its own requests. This simplification has no design implications. For a given server, we may also refer to all other servers as ``its peers.''
+
+Communication channels between any pair of servers are taken to follow a FIFO policy. Further, message latency is considered to be unbounded, and as such an asynchronous system model is assumed. However, as a practical compromise, timeouts may be used to detect server or communication link failures.
+
+% ---------------------------------------------------------------------------- %
+
+\paragraph{Workload assumptions}
+
+% \alberto{Deciding between push-based or pull-based, and how these strategies are most adequate for read-intensive and write-intensive workloads, respectively. Recalling our arguably reasonable assumption of many more get than publish commands.}
+
+The most fundamental design decisions regarding what messages are exchanged between servers and when depend on expected properties of the workloads to be experienced by the system. The ratio between number of \texttt{get} and \texttt{publish} requests submitted by clients is pariticularly decisive. If, for instance, it is expected that the amount and frequency of \texttt{get} request is much higher than for \texttt{publish} requests, one would try to avoid the necessity for inter-server communication when serving the former type of requests. On the other extreme, if the ratio between the amoount of the two types of requests is inverted, it would be optimal to be able to serve \texttt{publish} requests without inter-server communication.
+
+Due to the nature and intended purpose of the system being developed, we argue that it is reasonable to assume a workload under which \texttt{get} requests are significantly more frequent than \texttt{publish} requests. This leads to a push-based architectural design, wherein servers immediately propagate chirp publications to their peers, as discussed below.
+
+% ---------------------------------------------------------------------------- %
+
+\paragraph{Dissemination and ordering of published chirps}
+
+% \alberto{How we then need globally order chirps, and how logical clocks can be used to accomplish this.}
+% \alberto{How this would fail if a network partition were to occur, leading to incoherent views of the state by different clients. How this can be solved by the Two-Phase Commit (2PC) protocol, ensuring that either all or none of the servers update their state with the chirp.}
+
+In order to serve a \texttt{publish} request, the server publishing the chirp communicates with all of its peers to inform them of the new chirp. By following this approach, it is then possible to serve \texttt{get} requests locally without any inter-server communication, as each server has up-to-date knowledge of all published chirps. This is a major advantage due to the assumption of \texttt{get}-intensive workloads.
+
+However, simply broadcasting every publish request to all peer servers is not enough to guarantee a global order of published chirps. This problem is solved through the use of \emph{logical clocks} to timestamp every chirp: the server from which a \texttt{publish} request originates broadcasts the new chirp, tagged with a timestamp sampled from the local logical clock, to all its peers, and then increments its local clock. Further, upon receiving a broadcast chirp, a server updates its local clock by setting it to the maximum value of itself and the timestamp receive with the chirp, and then increments it. Chirps are then ordered by ascending timestamp, and originating server identifiers are used to break ties.
+
+% ---------------------------------------------------------------------------- %
+
+\paragraph{Resilience to server and communication link failures}
+
+As previously stated, the system is only required to make progress if all servers are alive and connected. However, correctness must be ensured in the face of transient network partitions and server failures. For instance, the sets of published chirps for servers in separate partitions of a partitioned network may not diverge. Further, servers must survive transient crashes during which their volatile memory contents are lost.
+
+In order to ensure that either all or no servers are informed of a published chirp, the Two-Phase Commit (2PC) protocol is used. When a server desires to publish a new chirp, it begins a transaction wherein it performs the role of coordinator and all servers (including itself) are participants. This effectively provides an all-or-nothing broadcasting primitive that guarantees that either all servers or no servers receive the broadcast message, which in this case represents the publishing of a new chirp. Further, to allow crashed servers to recover, its set of known chirps is persistently stored.
+
+% ---------------------------------------------------------------------------- %
+
+% \alberto{Recall that the system may block when a server is not available (dead, network partition), but also that the system must continue to function correctly after all servers come back. How we solve this by storing the whole state persistently, updating it with every committed 2PC. Also, how this is not a complete solution, as updating the persisted state can fail. In this case, we simply crash the server for it to be restarted by some supervisor and try to update the state again from the 2PC log (updating the local state is an idempotent operation). However, how this this is still not a complete solution, as this can leave the state in a corrupted state. How one could solve this by employing more sofisticated techniques.}
+
+% Client connects to one server.
+% Client send chirps to that server.
+% Because workload is read-intensive by assumption, data replication is immediate, i.e., the server immediately informs other servers of the message.
+% But should the client chirp publication only wait until the one server acknowledges it, or until all servers acknowledge it?
+% Actually, if it weren't completely synchronous, the client who published the chirp could then connect to another server,  ``get'' chirps, and it would be possible to not get the just-published chirp if it wasn't fully replicated yet.
+% This could be solved by asking other servers for all relevant chirps on each client get, but that would give up the advantages of the immediate-replication strategy.
+
+% Peer-to-peer network of "servers", which form a "cluster".
+% A "client" connects to a particular "server", which coordinates with its "peers" to maintain cluster operation.
+% From the perspective of the server peers, there exist peers and there exist clients.
+% From the perspective of the client, there exists one server with multiple endpoints.
+
+% Objective: Successive gets by the same client on the same topics may only differ by adding more messages after the last message. Implication: Publishing a chirp requires that all servers acknowledge it. Otherwise, in the event of a network partition, the objective would not be met.
+
+% We will from here on refer to clients as clients and to the peers as servers.
+% We only care about the ordering of the chirps, so we only timestamp the events corresponding to the reception of a chirp from a client by a server. The clock ticks upon that reception, and also when a publishing request from another server is received, at which point the clock is adjusted and ticks as dictated by the logical clock algorithm.
+% We refer to those peers as servers. (Referring to them as peers could confuse the reader into considering clients peers as well, because they kind of are peers of the system too.)
+
+% \begin{enumerate}
+%     \item Logical clocks for establishing a global order of chirps~\cite{lamport-1978}.
+%     \item Two-phase commit for ensuring that publishing a chirp either succeeds on all servers or fails on all server.
+%     \item Persistency so that servers can crash and reboot without loosing their state.
+% \end{enumerate}
+
+% - What about persisting the state?
+% - Just a log of 2PCs?
+% - How could we truncate it?
+% - A super old commit might hold the only chirp of some topic, so we can't remove it.
+% - This implies that the 2PC log can't be used to store the state.
+% - We can't corrupt the state, however it is stored.
+% - We can use atomic replaces, but that does not scale well to large states.
+% - So we should use Atomix's journals.
+
+% - Concurrent 2PCs?
+% - How to identify 2PCs? 
+% - (coordinator-id, seqnum) tuple?
+% - Each server must keep a journal (logical) for each 2PC.
+% - On reboot, pending 2PC must be continued.
+% - NOTE: Must also remember my clock across reboots!
+
+% Each client simply instructs a server to do some action, in a standard client-server architecture.
+% The server then does the things, and replies success or failure to the client.
+% So we can simply think of servers as being the ones doing the things.
+% So, in this discussion, we don't mention the clients.
+% It is the clients that trigger the servers to do things, but this does not affect the inter-server protocols.
+
+% The network of servers is fully connected: there exists a (bidirectional) channel between every pair of servers.
+% Channels are assumed to be reliable and FIFO (which they are).
+
+% Liveness of the system is only ensured when all servers are up.
+
+% ---------------------------------------------------------------------------- %

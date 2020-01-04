@@ -1,0 +1,67 @@
+% ---------------------------------------------------------------------------- %
+
+\section{Implementation}
+\label{sec:implementation}
+
+The system was implemented using the Java SE 11 language and platform. The implementation was first divided into client-specific code, server-specific code, and code common to both client and server. 
+The implementation consists on an \emph{IntelliJ} project named \emph{chirper}, a pun based on the well known \emph{Twitter} and its similarities to our system. This project contains three modules: client, server, and shared, corresponding to the aforementioned code divisions. The client and server projects provide runnable applications.
+
+% The client contains everything related to the client's interface to perform the required operations. It has a Main class, to start its "program" by connecting to a server and accepting input lines, a Client that implements all the operations and a Prompt class which treats the lines inserted on the command prompt by the client, and in our case, we have three types of accepted lines.
+
+% The Shared module is meant to contain ev
+
+\paragraph{Client}
+
+The client provides a basic command line interface through which the user can subscribe to a certain set of topics, perform \texttt{get} requests, and perform \texttt{publish} requests. Communication with servers and also in between servers is accomplished using Netty. The interface provided by the client application accepts input lines with the following forms:
+
+\begin{itemize}
+    \item \texttt{!get}, to fetch the latest messages, \emph{chirps}, with the subscribed topics (all topics are considered if the client did not first subscribe to specific topics);
+    \item \texttt{!subscribe [topics...]} or \emph{!sub [topics...]}, which subscribes the client to the specified topics. % in our case the topics are preceded by a \#. One may also use the full word subscribe instead of sub.
+    \item \texttt{<chirp>}, a free-form line representing a chirp to be published, which must include one or more topics prefixed by the \# character (\emph{e.g.}, \texttt{My first chirp about \#oranges.}).
+    % \item \emph{chirp \#(topic)}, to publish a chirp one must type the message and follow with a \#topic.
+\end{itemize}
+
+\paragraph{Server}
+
+The server module is further subdivided into three main components: (1) the \texttt{ServerNetwork} class, which provides an abstraction layer on top of Netty to allow messaging with addressing based on unique server identifiers; (2) the \texttt{AllOrNothingBroadcaster} class and related classes, which provide an abstraction (implemented using the 2PC protocol) for performing broadcasts with the guarantee that either all or no peer servers receive the broadcast message, and (3) the \texttt{ChirpStore} class, which provides state persistence. The \texttt{Server} class glues these components together, and also hosts the logical clock implementation. Note that a \texttt{BasicBroadcaster} class is also included, which provides a basic broadcast primitive with no delivery guarantees.
+
+% ---------------------------------------------------------------------------- %
+
+% We also have the broadcaster. And the three concrete subclasses: ... . They provide these guarantees: ... . The AllOrNothingOrderedBroadcaster is the one used in the final implementation. The others exist for comparison purposes. They are also handy for evaluating the overhead of ensuring global ordering and also all-or-nothing semantics.
+
+% \begin{verbatim}
+% NETWORK
+
+%     Represents the set of all clients and servers and provides primitives for
+%     point-to-point communication with any of those clients and servers with
+%     addressing based on host-port pairs.
+
+% SERVER NETWORK
+
+%     Provides a subset view of a NETWORK, representing only the servers. Provides
+%     primitives for point-to-point communication with any of those servers with
+%     addressing based on server identifiers. (A kind of overlay network that
+%     has the same links but provides addressing based on server identifiers.)
+
+% BROADCASTER (interface)
+
+%     Provides an interface for broadcast communication over a SERVER NETWORK.
+
+% UNORDERED BROADCASTER
+
+%     A BROADCASTER with no guarantees over the global ordering of messages
+%     broadcast by servers and no all-or-nothing guarantees.
+
+% ORDERED BROADCASTER
+
+%     A BROADCASTER which guarantees a global order of messages broadcast by
+%     servers but no all-or-nothing guarantees.
+
+% ALL-OR-NOTHING BROADCASTER
+
+%     A BROADCASTER which guarantees a global order of messages broadcast by
+%     servers and that ensures that either all or no servers receive the broadcast
+%     message.
+% \end{verbatim}
+
+% ---------------------------------------------------------------------------- %

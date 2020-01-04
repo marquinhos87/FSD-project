@@ -1,0 +1,10 @@
+% ---------------------------------------------------------------------------- %
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+In this report we described the development of a Twitter-like distributed messaging system with global ordering guarantees and persistence. We first laid out the requirements that the system should satisfy, and then detailed its design justifying its major design decisions. Finally, we described several aspects of the system's implementation.
+
+The system currently assumes that the set of server nodes is predetermined and known \emph{a priori}, and relies on predefined unique server identifiers. As future work, it would be interesting to extend the system to scenarios were peer servers are originally unknown, and also to support growing and shrinking the server cluster. The ability for the system to continue functioning in the face of server failures, instead of blocking if not all servers or communications links are available, is also further future work.
+
+% ---------------------------------------------------------------------------- %

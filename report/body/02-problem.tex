@@ -1,0 +1,64 @@
+% ---------------------------------------------------------------------------- %
+
+\section{Problem Statement}
+\label{sec:problem}
+
+The objective of the assignment to which this report pertains is to develop a distributed messaging system with global message ordering and persistence.
+The system is composed by an arbitrary number of servers, and clients are allowed to connect to any server by choice. A client, when connected to a server performs operations impacting the overall state of the system. % In order to achieve persistency, this state should be the same
+
+
+\paragraph{Requirements}
+
+These are the properties proposed in the assignment that the system implementation should abide:
+
+\begin{itemize}
+    \item Servers can \emph{restart} at any given point, but once they are \emph{all back up} and running the whole system should be operational again.
+    
+    \item Clients can connect to \emph{any} server, and perform any of these three operations:
+    \begin{enumerate}
+        \item Publish a message tagged by one or more topics.
+        \item Subscribe to a list of topics.
+        \item Get the last ten messages containing any of the topics he's subscribed to.
+    \end{enumerate}
+    
+    \item Messages obtained by each client should reflect a \emph{coherent order} of all operations performed on the system by that same client or any other client.
+\end{itemize}
+
+% ---------------------------------------------------------------------------- %
+
+% \paragraph{Assignment Assumptions}
+% System servers are all known to each other. 
+
+% \alberto{Briefly, what the system allows doing.}
+
+% \alberto{Concretely, the requirements imposed by the assignment.}
+
+% \alberto{Concretely, the assumptions allowed by the assignment.}
+
+% \alberto{Our more refined view of the required functional system properties.}
+
+% \alberto{Further, our additional assumptions.}
+
+
+% Text.
+% 
+% \paragraph{Assumptions}
+
+% Read-intensive workloads.
+
+% \paragraph{Further assumptions and system properties}
+
+% We assume that \emph{get} requests are submitted much more frequently than \emph{publish} requests.
+% This affects the communication strategy between servers.
+
+% We further refine some system properties that are not explicitly stated in the assignment:
+
+% \begin{itemize}
+    
+%     \item When a client "gets" a list of messages and there is a message A on that list, then if the same client performs another "get", that same message A should be on this list as well, unless it was removed for there being ten messages more recent than A.   
+
+%     \item All messages have to appear on the same order no matter the server from which the "get" was performed.
+
+% \end{itemize}
+
+% ---------------------------------------------------------------------------- %
